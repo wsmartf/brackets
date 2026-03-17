@@ -51,19 +51,9 @@ if (parentPort) {
     };
 
     let remaining = 0;
-    // Track which team (by initial_order index) wins the championship
-    // Champion is determined by bit 62 (game index 62).
-    // But to know WHICH team won, we need to trace the bracket path.
-    // For V1 simplification: just count remaining. Championship probs
-    // require decoding the winner, which is more complex.
-    //
-    // To determine the champion, we'd need to simulate the bracket forward
-    // (tracking which team index advances through each round). This is doable
-    // but adds complexity to the hot loop. For V1, we can skip championship
-    // probs or compute them in a separate slower pass over matching brackets only.
-    //
-    // For now: just count remaining brackets.
-    // TODO V2: track champions by simulating team advancement in the hot loop.
+    const championCounts = new Array<number>(64).fill(0);
+    const currentRound = new Uint8Array(64);
+    const nextRound = new Uint8Array(64);
 
     const targetLo = valueLo & maskLo;
     const targetHi = valueHi & maskHi;
@@ -73,37 +63,70 @@ if (parentPort) {
       let state = index | 0;
       let lo = 0;
       let hi = 0;
+      let currentSize = 64;
+      let nextSize = 0;
 
-      // Generate 32 bits (games 0-31, Round of 64 + part of Round of 32)
+      for (let i = 0; i < 64; i++) {
+        currentRound[i] = i;
+      }
+
+      // Generate Round of 64 bits while tracking advancing teams.
       for (let i = 0; i < 32; i++) {
         state = (state + 0x6d2b79f5) | 0;
         let t = Math.imul(state ^ (state >>> 15), 1 | state);
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         const rand = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        const team1 = currentRound[i * 2];
+        const team2 = currentRound[i * 2 + 1];
+
         if (rand >= probabilities[i]) {
           lo |= 1 << i;
+          nextRound[nextSize++] = team2;
+        } else {
+          nextRound[nextSize++] = team1;
         }
       }
 
       // Quick reject on lower 32 bits before computing upper bits
       if ((lo & maskLo) !== targetLo) continue;
 
-      // Generate 31 bits (games 32-62, remaining rounds through championship)
-      for (let i = 32; i < 63; i++) {
+      for (let i = 0; i < nextSize; i++) {
+        currentRound[i] = nextRound[i];
+      }
+      currentSize = nextSize;
+      nextSize = 0;
+
+      for (let gameIndex = 32; gameIndex < 63; gameIndex++) {
         state = (state + 0x6d2b79f5) | 0;
         let t = Math.imul(state ^ (state >>> 15), 1 | state);
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         const rand = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        if (rand >= probabilities[i]) {
-          hi |= 1 << (i - 32);
+        const pairIndex = nextSize * 2;
+        const team1 = currentRound[pairIndex];
+        const team2 = currentRound[pairIndex + 1];
+
+        if (rand >= probabilities[gameIndex]) {
+          hi |= 1 << (gameIndex - 32);
+          nextRound[nextSize++] = team2;
+        } else {
+          nextRound[nextSize++] = team1;
+        }
+
+        if (nextSize * 2 === currentSize) {
+          for (let i = 0; i < nextSize; i++) {
+            currentRound[i] = nextRound[i];
+          }
+          currentSize = nextSize;
+          nextSize = 0;
         }
       }
 
       if ((hi & maskHi) !== targetHi) continue;
 
       remaining++;
+      championCounts[currentRound[0]]++;
     }
 
-    parentPort!.postMessage({ remaining });
+    parentPort!.postMessage({ remaining, championCounts });
   });
 }

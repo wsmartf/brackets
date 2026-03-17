@@ -44,3 +44,5 @@ next-env.d.ts
 march-madness.db
 march-madness.db-wal
 march-madness.db-shm
+
+.vscode

@@ -13,14 +13,22 @@ import { Worker } from "worker_threads";
 import { join } from "path";
 import { cpus } from "os";
 import { buildProbabilityTable, getInitialOrder, computeBitmasks } from "./tournament";
-import { getResults, setStats } from "./db";
+import { getResults, initDb, setStats } from "./db";
 
 // ============================================================
 // Constants
 // ============================================================
 
-export const NUM_BRACKETS = 1_000_000_000;
-const NUM_WORKERS = Math.max(1, cpus().length - 1); // Leave 1 core for main thread
+function getEnvInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export const NUM_BRACKETS = getEnvInt("ANALYZE_NUM_BRACKETS", 1_000_000_000);
+const NUM_WORKERS = getEnvInt("ANALYZE_NUM_WORKERS", Math.max(1, cpus().length - 1));
 
 // ============================================================
 // Types
@@ -30,6 +38,7 @@ export interface AnalysisResult {
   remaining: number;
   totalBrackets: number;
   gamesCompleted: number;
+  championshipProbs: Record<string, number>;
   /** Timestamp of when analysis completed */
   analyzedAt: string;
 }
@@ -48,12 +57,13 @@ export interface AnalysisResult {
  * @returns Promise<AnalysisResult> with the aggregated stats
  */
 export async function runAnalysis(): Promise<AnalysisResult> {
+  initDb();
   const initialOrder = getInitialOrder();
   const probabilities = buildProbabilityTable();
   const results = getResults();
 
   // Compute bitmasks from known results
-  const { maskLo, maskHi, valueLo, valueHi } = computeBitmasks(results, initialOrder);
+  const { maskLo, maskHi, valueLo, valueHi } = computeBitmasks(results);
 
   const gamesCompleted = results.filter((r) => r.winner).length;
 
@@ -63,6 +73,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
       remaining: NUM_BRACKETS,
       totalBrackets: NUM_BRACKETS,
       gamesCompleted: 0,
+      championshipProbs: {},
       analyzedAt: new Date().toISOString(),
     };
     setStats("analysis", JSON.stringify(stats));
@@ -71,7 +82,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
 
   // Split work across workers
   const chunkSize = Math.ceil(NUM_BRACKETS / NUM_WORKERS);
-  const workerPromises: Promise<{ remaining: number }>[] = [];
+  const workerPromises: Promise<{ remaining: number; championCounts: number[] }>[] = [];
 
   // Worker path resolution for Next.js:
   //
@@ -98,6 +109,9 @@ export async function runAnalysis(): Promise<AnalysisResult> {
   for (let w = 0; w < NUM_WORKERS; w++) {
     const startIndex = w * chunkSize;
     const endIndex = Math.min(startIndex + chunkSize, NUM_BRACKETS);
+    if (startIndex >= endIndex) {
+      continue;
+    }
 
     workerPromises.push(
       new Promise((resolve, reject) => {
@@ -135,14 +149,29 @@ export async function runAnalysis(): Promise<AnalysisResult> {
 
   // Aggregate
   let totalRemaining = 0;
+  const championCounts = new Array<number>(initialOrder.length).fill(0);
+
   for (const wr of workerResults) {
     totalRemaining += wr.remaining;
+    for (let i = 0; i < championCounts.length; i++) {
+      championCounts[i] += wr.championCounts[i] ?? 0;
+    }
+  }
+
+  const championshipProbs: Record<string, number> = {};
+  if (totalRemaining > 0) {
+    for (let i = 0; i < championCounts.length; i++) {
+      const count = championCounts[i];
+      if (count === 0) continue;
+      championshipProbs[initialOrder[i]] = count / totalRemaining;
+    }
   }
 
   const stats: AnalysisResult = {
     remaining: totalRemaining,
     totalBrackets: NUM_BRACKETS,
     gamesCompleted,
+    championshipProbs,
     analyzedAt: new Date().toISOString(),
   };
 

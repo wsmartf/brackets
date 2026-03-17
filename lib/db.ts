@@ -15,6 +15,7 @@
 
 import Database from "better-sqlite3";
 import { join } from "path";
+import { buildGameDefinitions } from "./tournament";
 
 // ============================================================
 // Types
@@ -40,12 +41,12 @@ function getDb(): Database.Database {
     const dbPath = join(process.cwd(), "march-madness.db");
     _db = new Database(dbPath);
     _db.pragma("journal_mode = WAL"); // Better concurrent read performance
-    initDb(_db);
+    initSchema(_db);
   }
   return _db;
 }
 
-function initDb(db: Database.Database): void {
+function initSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS results (
       game_index INTEGER PRIMARY KEY,
@@ -64,6 +65,11 @@ function initDb(db: Database.Database): void {
   `);
 }
 
+export function initDb(): void {
+  getDb();
+  ensureResultsSeeded();
+}
+
 // ============================================================
 // Results CRUD
 // ============================================================
@@ -72,6 +78,7 @@ function initDb(db: Database.Database): void {
  * Get all game results, ordered by game_index.
  */
 export function getResults(): GameResult[] {
+  initDb();
   const db = getDb();
   return db.prepare("SELECT * FROM results ORDER BY game_index").all() as GameResult[];
 }
@@ -80,6 +87,7 @@ export function getResults(): GameResult[] {
  * Get results that have a winner (completed games only).
  */
 export function getCompletedResults(): GameResult[] {
+  initDb();
   const db = getDb();
   return db
     .prepare("SELECT * FROM results WHERE winner IS NOT NULL ORDER BY game_index")
@@ -96,11 +104,15 @@ export function setResult(
   team2: string,
   winner: string | null
 ): void {
+  initDb();
   const db = getDb();
   db.prepare(
     `INSERT INTO results (game_index, round, team1, team2, winner, updated_at)
      VALUES (?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(game_index) DO UPDATE SET
+       round = excluded.round,
+       team1 = excluded.team1,
+       team2 = excluded.team2,
        winner = excluded.winner,
        updated_at = excluded.updated_at`
   ).run(gameIndex, round, team1, team2, winner);
@@ -129,6 +141,19 @@ export function seedResults(
   tx();
 }
 
+export function ensureResultsSeeded(): void {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT COUNT(*) AS count FROM results")
+    .get() as { count: number };
+
+  if (row.count > 0) {
+    return;
+  }
+
+  seedResults(buildGameDefinitions());
+}
+
 // ============================================================
 // Stats CRUD
 // ============================================================
@@ -137,6 +162,7 @@ export function seedResults(
  * Get a cached stat by key. Returns null if not found.
  */
 export function getStats(key: string): string | null {
+  initDb();
   const db = getDb();
   const row = db.prepare("SELECT value FROM stats WHERE key = ?").get(key) as
     | { value: string }
@@ -148,6 +174,7 @@ export function getStats(key: string): string | null {
  * Set a cached stat (upsert).
  */
 export function setStats(key: string, value: string): void {
+  initDb();
   const db = getDb();
   db.prepare(
     `INSERT INTO stats (key, value, updated_at)

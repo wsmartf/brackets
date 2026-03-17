@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "analyze": "tsx lib/analyze.ts"
+    "analyze": "node --require tsx/cjs scripts/analyze.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

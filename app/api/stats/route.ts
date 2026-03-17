@@ -24,6 +24,7 @@ export async function GET() {
       remaining: NUM_BRACKETS,
       totalBrackets: NUM_BRACKETS,
       gamesCompleted: 0,
+      championshipProbs: {},
       analyzedAt: null,
     });
   }

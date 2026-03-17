@@ -37,6 +37,13 @@ export interface Tournament {
   teams: Team[];
 }
 
+export interface GameDefinition {
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+}
+
 // ============================================================
 // Constants
 // ============================================================
@@ -190,6 +197,39 @@ export function buildProbabilityTable(): number[] {
 }
 
 /**
+ * Build the canonical list of 63 tournament game slots.
+ *
+ * First-round games use real team names. Later rounds are seeded with stable
+ * placeholder labels so the DB has all rows from the start.
+ */
+export function buildGameDefinitions(): GameDefinition[] {
+  const initialOrder = getInitialOrder();
+  const definitions: GameDefinition[] = [];
+  const rounds = [64, 32, 16, 8, 4, 2];
+  let participants = [...initialOrder];
+  let gameIndex = 0;
+
+  for (const round of rounds) {
+    const nextParticipants: string[] = [];
+
+    for (let i = 0; i < participants.length; i += 2) {
+      definitions.push({
+        game_index: gameIndex,
+        round,
+        team1: participants[i],
+        team2: participants[i + 1],
+      });
+      nextParticipants.push(`Winner of Game ${gameIndex}`);
+      gameIndex++;
+    }
+
+    participants = nextParticipants;
+  }
+
+  return definitions;
+}
+
+/**
  * Given results stored in the DB, compute the bitmask pair (mask + value)
  * for filtering brackets.
  *
@@ -199,8 +239,7 @@ export function buildProbabilityTable(): number[] {
  * @returns { maskLo, maskHi, valueLo, valueHi }
  */
 export function computeBitmasks(
-  results: { game_index: number; team1: string; team2: string; winner: string | null }[],
-  initialOrder: string[]
+  results: { game_index: number; team1: string; team2: string; winner: string | null }[]
 ): { maskLo: number; maskHi: number; valueLo: number; valueHi: number } {
   let maskLo = 0,
     maskHi = 0,
