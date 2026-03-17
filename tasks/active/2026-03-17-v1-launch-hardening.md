@@ -30,18 +30,17 @@ Finish the remaining work needed to safely run the public site for tournament da
 8. Host-machine deploy/restart validation
 
 ## Current Status
-- Task briefs exist
-- Base analysis engine and dashboard are running
-- Makefile-based workflow exists
 - Admin auth complete and locally verified
 - Refresh lock and status complete and locally verified
 - Audit log complete and locally verified
 - Full-round weighted probabilities complete and locally verified
 - ESPN integration complete and locally verified
 - First Four runtime substitution complete and locally verified
+- README and deploy runbook updated for the new admin/refresh workflow
+- Remaining work is host-machine restart/deploy validation
 
 ## Next Step
-Do final end-to-end verification, tighten docs/runbooks where behavior changed, and hand off the host-machine restart/release checks.
+Run the `pm2` restart/reboot checks on the actual host machine and confirm the public site still works end to end.
 
 ## Affected Areas
 - `app/api/*`
