@@ -16,6 +16,18 @@ This repo is a small, time-sensitive Next.js app for analyzing 1 billion determi
 - `make analyze` — full analysis with default bracket count
 - `make analyze-smoke` — quick analysis smoke test
 
+## UI development and Playwright MCP
+- For any user-facing UI change, verify the affected route or flow in the browser with Playwright MCP before calling the task done.
+- Before verifying, navigate to the relevant route in the browser.
+- Prefer browser navigation, DOM inspection, and accessibility-tree checks to confirm text, state, controls, errors, and interactions. Do not rely on screenshots for routine behavioral verification.
+- Use screenshots when visual judgment matters: layout, spacing, alignment, overlap, hierarchy, responsiveness, color/contrast, and empty states. For layout or styling fixes, capture before/after screenshots when practical.
+- When debugging a UI bug, inspect or reproduce it in the browser first, then verify the final behavior in the browser after the code change.
+- Prefer stable selectors such as roles, labels, placeholder text, and existing `data-testid` hooks. Add a small targeted test ID when repeated browser validation needs a reliable hook.
+- Do not assume a change works based on code inspection alone.
+- A UI task is only done when the relevant browser check matches the task's requirements or acceptance criteria. Summarize what you verified when useful.
+- Keep browser validation scoped to the affected route or flow. Avoid broad exploratory QA unless the task asks for it.
+- If a manually verified flow is critical and likely to regress, consider adding or updating a Playwright test.
+
 ## Delivery Standard
 A task is done when:
 - the code path works end to end
