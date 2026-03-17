@@ -44,6 +44,14 @@ export interface GameDefinition {
   team2: string;
 }
 
+export interface GameResultLike {
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+  winner: string | null;
+}
+
 // ============================================================
 // Constants
 // ============================================================
@@ -200,9 +208,46 @@ export function buildMatchupProbabilityTable(): number[] {
  */
 export function buildGameDefinitions(): GameDefinition[] {
   const initialOrder = getInitialOrder();
+  return buildGameDefinitionsFromParticipants(initialOrder);
+}
+
+/**
+ * Build the current game slots based on known winners.
+ *
+ * When prior-round winners are known, later-round placeholder labels are
+ * replaced with the actual advancing team names.
+ */
+export function buildCurrentGameDefinitions(results: GameResultLike[]): GameDefinition[] {
+  const winnersByGame = new Map(results.map((result) => [result.game_index, result.winner]));
+  const initialOrder = getInitialOrder();
+  const definitions = buildGameDefinitionsFromParticipants(initialOrder);
+
+  for (const game of definitions) {
+    const winner = winnersByGame.get(game.game_index);
+    if (!winner) {
+      continue;
+    }
+
+    const nextGameIndex = getNextGameIndex(game.game_index);
+    if (nextGameIndex === null) {
+      continue;
+    }
+
+    const nextGame = definitions[nextGameIndex];
+    if (game.game_index % 2 === 0) {
+      nextGame.team1 = winner;
+    } else {
+      nextGame.team2 = winner;
+    }
+  }
+
+  return definitions;
+}
+
+function buildGameDefinitionsFromParticipants(initialParticipants: string[]): GameDefinition[] {
   const definitions: GameDefinition[] = [];
   const rounds = [64, 32, 16, 8, 4, 2];
-  let participants = [...initialOrder];
+  let participants = [...initialParticipants];
   let gameIndex = 0;
 
   for (const round of rounds) {
@@ -223,6 +268,15 @@ export function buildGameDefinitions(): GameDefinition[] {
   }
 
   return definitions;
+}
+
+function getNextGameIndex(gameIndex: number): number | null {
+  if (gameIndex < 32) return 32 + Math.floor(gameIndex / 2);
+  if (gameIndex < 48) return 48 + Math.floor((gameIndex - 32) / 2);
+  if (gameIndex < 56) return 56 + Math.floor((gameIndex - 48) / 2);
+  if (gameIndex < 60) return 60 + Math.floor((gameIndex - 56) / 2);
+  if (gameIndex < 62) return 62;
+  return null;
 }
 
 /**

@@ -88,6 +88,13 @@ curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
+Refresh analysis without ESPN fetch first:
+
+```bash
+curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 Set a result:
 
 ```bash

@@ -25,6 +25,7 @@ import {
   startAnalysisRun,
 } from "@/lib/analysis-status";
 import { addAuditLog } from "@/lib/db";
+import { fetchAndApplyEspnResults } from "@/lib/espn";
 
 export async function POST(request: Request) {
   const authError = requireAdmin(request);
@@ -45,21 +46,30 @@ export async function POST(request: Request) {
   addAuditLog("refresh_started", { triggerSource: "manual" });
 
   try {
-    // TODO: Optionally fetch ESPN scores first
-    // const url = new URL(request.url);
-    // if (url.searchParams.get("espn") === "true") {
-    //   await fetchAndUpdateESPNResults();
-    // }
+    const url = new URL(request.url);
+    const useEspn = url.searchParams.get("espn") !== "false";
+    let espnSummary = null;
+
+    if (useEspn) {
+      try {
+        espnSummary = await fetchAndApplyEspnResults();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addAuditLog("espn_fetch_failed", { error: message });
+        espnSummary = { applied: 0, skipped: 0, finalResultsSeen: 0, error: message };
+      }
+    }
 
     const stats = await runAnalysis();
     const analysisStatus = finishAnalysisRun();
     addAuditLog("refresh_succeeded", {
       triggerSource: "manual",
+      espnSummary,
       remaining: stats.remaining,
       gamesCompleted: stats.gamesCompleted,
       analyzedAt: stats.analyzedAt,
     });
-    return NextResponse.json({ ...stats, analysisStatus });
+    return NextResponse.json({ ...stats, analysisStatus, espnSummary });
   } catch (error) {
     const analysisStatus = finishAnalysisRun(error);
     addAuditLog("refresh_failed", {

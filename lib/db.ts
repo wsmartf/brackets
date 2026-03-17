@@ -27,6 +27,8 @@ export interface GameResult {
   team1: string;
   team2: string;
   winner: string | null;
+  source: string;
+  manual_override: number;
   updated_at: string;
 }
 
@@ -77,6 +79,24 @@ function initSchema(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  ensureColumn(db, "results", "source", "TEXT NOT NULL DEFAULT 'seed'");
+  ensureColumn(db, "results", "manual_override", "INTEGER NOT NULL DEFAULT 0");
+}
+
+function ensureColumn(
+  db: Database.Database,
+  tableName: string,
+  columnName: string,
+  definition: string
+): void {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
+    name: string;
+  }>;
+
+  if (!columns.some((column) => column.name === columnName)) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  }
 }
 
 export function initDb(): void {
@@ -116,20 +136,25 @@ export function setResult(
   round: number,
   team1: string,
   team2: string,
-  winner: string | null
+  winner: string | null,
+  options: { source?: string; manualOverride?: boolean } = {}
 ): void {
   initDb();
   const db = getDb();
+  const source = options.source ?? "manual";
+  const manualOverride = (options.manualOverride ?? false) ? 1 : 0;
   db.prepare(
-    `INSERT INTO results (game_index, round, team1, team2, winner, updated_at)
-     VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `INSERT INTO results (game_index, round, team1, team2, winner, source, manual_override, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(game_index) DO UPDATE SET
        round = excluded.round,
        team1 = excluded.team1,
        team2 = excluded.team2,
        winner = excluded.winner,
+       source = excluded.source,
+       manual_override = excluded.manual_override,
        updated_at = excluded.updated_at`
-  ).run(gameIndex, round, team1, team2, winner);
+  ).run(gameIndex, round, team1, team2, winner, source, manualOverride);
 }
 
 export function getResult(gameIndex: number): GameResult | null {
@@ -153,8 +178,8 @@ export function seedResults(
 ): void {
   const db = getDb();
   const insert = db.prepare(
-    `INSERT OR IGNORE INTO results (game_index, round, team1, team2)
-     VALUES (?, ?, ?, ?)`
+    `INSERT OR IGNORE INTO results (game_index, round, team1, team2, source, manual_override)
+     VALUES (?, ?, ?, ?, 'seed', 0)`
   );
 
   const tx = db.transaction(() => {

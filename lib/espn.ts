@@ -1,20 +1,5 @@
-/**
- * ESPN API integration for fetching live tournament scores.
- *
- * Uses the free, unauthenticated ESPN scoreboard API:
- * https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard
- *
- * This endpoint returns JSON with game status, team names, seeds, and scores.
- * No API key required. Poll respectfully (every 60s max during games).
- *
- * IMPLEMENTATION NOTES:
- * - ESPN team names may not exactly match our tournament-2026.json names.
- *   A name mapping/fuzzy matching step may be needed.
- * - The API returns ALL college basketball games for a date, not just tournament games.
- *   Filter by checking for seed information or tournament indicator fields.
- * - Games have status: STATUS_SCHEDULED, STATUS_IN_PROGRESS, STATUS_FINAL
- * - Only process STATUS_FINAL games for result updates.
- */
+import { addAuditLog, getResults, setResult } from "./db";
+import { buildCurrentGameDefinitions } from "./tournament";
 
 /**
  * Fetch the ESPN scoreboard for a given date.
@@ -53,7 +38,7 @@ export async function fetchScoreboard(date: string): Promise<ESPNScoreboard> {
 }
 
 /**
- * Extract completed game results from an ESPN scoreboard response.
+ * Extract completed tournament game results from an ESPN scoreboard response.
  *
  * @param scoreboard - Raw ESPN API response
  * @returns Array of { team1, team2, winner, score1, score2 } for final games
@@ -66,25 +51,206 @@ export function extractResults(scoreboard: ESPNScoreboard): ESPNGameResult[] {
     if (status !== "STATUS_FINAL") continue;
 
     const comp = event.competitions?.[0];
+    if (comp?.type?.abbreviation !== "TRNMNT") continue;
     if (!comp?.competitors || comp.competitors.length !== 2) continue;
 
     const [teamA, teamB] = comp.competitors;
+    const nameA = teamA.team.shortDisplayName ?? teamA.team.displayName;
+    const nameB = teamB.team.shortDisplayName ?? teamB.team.displayName;
+    const winner = teamA.winner ? nameA : nameB;
 
     results.push({
-      team1: teamA.team.displayName,
-      team2: teamB.team.displayName,
-      winner: teamA.winner
-        ? teamA.team.displayName
-        : teamB.team.displayName,
+      id: event.id,
+      team1: nameA,
+      team2: nameB,
+      winner,
       score1: parseInt(teamA.score, 10),
       score2: parseInt(teamB.score, 10),
-      // Extract seed if available (for filtering tournament games)
       seed1: teamA.curatedRank?.current ?? null,
       seed2: teamB.curatedRank?.current ?? null,
     });
   }
 
   return results;
+}
+
+const ESPN_NAME_ALIASES: Record<string, string> = {
+  "miami (oh)": "Miami OH",
+  "miami oh": "Miami OH",
+  "miami (fl)": "Miami FL",
+  "nc state": "NC State",
+  "st. john's": "St. John's",
+  "st. mary's": "Saint Mary's",
+  "saint marys": "Saint Mary's",
+  "saint mary's": "Saint Mary's",
+  "prairie view": "Prairie View A&M",
+  "texas a&m aggies": "Texas A&M",
+};
+
+function normalizeTeamName(name: string): string {
+  return name.toLowerCase().replace(/['’.]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function mapEspnTeamName(name: string): string | null {
+  const normalized = normalizeTeamName(name);
+  const alias = ESPN_NAME_ALIASES[normalized];
+  if (alias) {
+    return alias;
+  }
+
+  const results = getResults();
+  const knownNames = new Set<string>();
+  for (const result of results) {
+    knownNames.add(result.team1);
+    knownNames.add(result.team2);
+  }
+
+  for (const knownName of knownNames) {
+    if (normalizeTeamName(knownName) === normalized) {
+      return knownName;
+    }
+  }
+
+  return null;
+}
+
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function getRecentDateStrings(daysBack: number): string[] {
+  const dates: string[] = [];
+  const today = new Date();
+
+  for (let offset = 0; offset < daysBack; offset++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    dates.push(formatDate(date));
+  }
+
+  return dates;
+}
+
+export interface EspnSyncSummary {
+  applied: number;
+  skipped: number;
+  finalResultsSeen: number;
+}
+
+export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSummary> {
+  const dateStrings = getRecentDateStrings(daysBack);
+  const scoreboards = await Promise.all(dateStrings.map((date) => fetchScoreboard(date)));
+  const dedupedResults = new Map<string, ESPNGameResult>();
+
+  for (const scoreboard of scoreboards) {
+    for (const result of extractResults(scoreboard)) {
+      dedupedResults.set(result.id, result);
+    }
+  }
+
+  let results = getResults();
+  let gameDefinitions = buildCurrentGameDefinitions(results);
+  let applied = 0;
+  let skipped = 0;
+
+  for (const espnResult of dedupedResults.values()) {
+    const team1 = mapEspnTeamName(espnResult.team1);
+    const team2 = mapEspnTeamName(espnResult.team2);
+    const winner = mapEspnTeamName(espnResult.winner);
+
+    if (!team1 || !team2 || !winner) {
+      skipped++;
+      addAuditLog("espn_result_skipped", {
+        reason: "team_mapping_failed",
+        espnResult,
+      });
+      continue;
+    }
+
+    const matchingGame = gameDefinitions.find(
+      (game) =>
+        (game.team1 === team1 && game.team2 === team2) ||
+        (game.team1 === team2 && game.team2 === team1)
+    );
+
+    if (!matchingGame) {
+      skipped++;
+      addAuditLog("espn_result_skipped", {
+        reason: "no_matching_game",
+        team1,
+        team2,
+        winner,
+        espnResultId: espnResult.id,
+      });
+      continue;
+    }
+
+    const currentResult = results.find((result) => result.game_index === matchingGame.game_index);
+    if (!currentResult) {
+      skipped++;
+      continue;
+    }
+
+    if (currentResult.manual_override) {
+      skipped++;
+      addAuditLog("espn_result_skipped", {
+        reason: "manual_override",
+        gameIndex: matchingGame.game_index,
+        team1: matchingGame.team1,
+        team2: matchingGame.team2,
+        winner,
+      });
+      continue;
+    }
+
+    if (winner !== matchingGame.team1 && winner !== matchingGame.team2) {
+      skipped++;
+      addAuditLog("espn_result_skipped", {
+        reason: "winner_not_in_matchup",
+        gameIndex: matchingGame.game_index,
+        team1: matchingGame.team1,
+        team2: matchingGame.team2,
+        winner,
+      });
+      continue;
+    }
+
+    if (
+      currentResult.winner === winner &&
+      currentResult.team1 === matchingGame.team1 &&
+      currentResult.team2 === matchingGame.team2
+    ) {
+      continue;
+    }
+
+    setResult(matchingGame.game_index, matchingGame.round, matchingGame.team1, matchingGame.team2, winner, {
+      source: "espn",
+      manualOverride: false,
+    });
+    addAuditLog("espn_result_applied", {
+      gameIndex: matchingGame.game_index,
+      round: matchingGame.round,
+      team1: matchingGame.team1,
+      team2: matchingGame.team2,
+      winner,
+      espnResultId: espnResult.id,
+      score1: espnResult.score1,
+      score2: espnResult.score2,
+    });
+    applied++;
+
+    results = getResults();
+    gameDefinitions = buildCurrentGameDefinitions(results);
+  }
+
+  return {
+    applied,
+    skipped,
+    finalResultsSeen: dedupedResults.size,
+  };
 }
 
 // ============================================================
@@ -103,17 +269,19 @@ interface ESPNEvent {
 }
 
 interface ESPNCompetition {
+  type?: { abbreviation?: string };
   competitors?: ESPNCompetitor[];
 }
 
 interface ESPNCompetitor {
-  team: { displayName: string; abbreviation: string };
+  team: { displayName: string; shortDisplayName?: string; abbreviation: string };
   score: string;
   winner: boolean;
   curatedRank?: { current: number };
 }
 
 export interface ESPNGameResult {
+  id: string;
   team1: string;
   team2: string;
   winner: string;

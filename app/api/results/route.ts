@@ -50,7 +50,10 @@ export async function POST(request: Request) {
     );
   }
 
-  setResult(game_index, round, team1, team2, winner);
+  setResult(game_index, round, team1, team2, winner, {
+    source: "manual",
+    manualOverride: winner !== null,
+  });
   addAuditLog(winner === null ? "result_cleared" : "result_set", {
     gameIndex: game_index,
     round,

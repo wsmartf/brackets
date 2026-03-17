@@ -37,9 +37,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Refresh lock and status complete and locally verified
 - Audit log complete and locally verified
 - Full-round weighted probabilities complete and locally verified
+- ESPN integration complete and locally verified
 
 ## Next Step
-Wire ESPN final-result ingestion into refresh while keeping manual override available.
+Handle the First Four/play-in winners via runtime substitution rather than live source-file edits.
 
 ## Affected Areas
 - `app/api/*`
