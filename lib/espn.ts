@@ -1,5 +1,103 @@
 import { addAuditLog, getResults, setResult } from "./db";
-import { buildCurrentGameDefinitions } from "./tournament";
+import {
+  buildCurrentGameDefinitions,
+  Team,
+  resetTournamentCaches,
+} from "./tournament";
+
+interface PlayInSlot {
+  placeholder: string;
+  roundOf64GameIndex: number;
+  roundOf64Team1: string;
+  candidates: Team[];
+}
+
+const PLAY_IN_SLOTS: PlayInSlot[] = [
+  {
+    placeholder: "UMBC",
+    roundOf64GameIndex: 16,
+    roundOf64Team1: "Michigan",
+    candidates: [
+      {
+        name: "UMBC",
+        seed: 16,
+        region: "Midwest",
+        kenpomRank: 185,
+        netRating: -1.67,
+      },
+      {
+        name: "Howard",
+        seed: 16,
+        region: "Midwest",
+        kenpomRank: 207,
+        netRating: -3.19,
+      },
+    ],
+  },
+  {
+    placeholder: "Texas",
+    roundOf64GameIndex: 12,
+    roundOf64Team1: "BYU",
+    candidates: [
+      {
+        name: "Texas",
+        seed: 11,
+        region: "West",
+        kenpomRank: 37,
+        netRating: 19.03,
+      },
+      {
+        name: "NC State",
+        seed: 11,
+        region: "West",
+        kenpomRank: 34,
+        netRating: 19.6,
+      },
+    ],
+  },
+  {
+    placeholder: "Prairie View A&M",
+    roundOf64GameIndex: 24,
+    roundOf64Team1: "Florida",
+    candidates: [
+      {
+        name: "Prairie View A&M",
+        seed: 16,
+        region: "South",
+        kenpomRank: 288,
+        netRating: -10.69,
+      },
+      {
+        name: "Lehigh",
+        seed: 16,
+        region: "South",
+        kenpomRank: 284,
+        netRating: -10.37,
+      },
+    ],
+  },
+  {
+    placeholder: "SMU",
+    roundOf64GameIndex: 20,
+    roundOf64Team1: "Tennessee",
+    candidates: [
+      {
+        name: "SMU",
+        seed: 11,
+        region: "Midwest",
+        kenpomRank: 42,
+        netRating: 18.09,
+      },
+      {
+        name: "Miami OH",
+        seed: 11,
+        region: "Midwest",
+        kenpomRank: 93,
+        netRating: 8.26,
+      },
+    ],
+  },
+];
 
 /**
  * Fetch the ESPN scoreboard for a given date.
@@ -78,6 +176,7 @@ const ESPN_NAME_ALIASES: Record<string, string> = {
   "miami (oh)": "Miami OH",
   "miami oh": "Miami OH",
   "miami (fl)": "Miami FL",
+  "n c state": "NC State",
   "nc state": "NC State",
   "st. john's": "St. John's",
   "st. mary's": "Saint Mary's",
@@ -108,6 +207,14 @@ function mapEspnTeamName(name: string): string | null {
   for (const knownName of knownNames) {
     if (normalizeTeamName(knownName) === normalized) {
       return knownName;
+    }
+  }
+
+  for (const slot of PLAY_IN_SLOTS) {
+    for (const candidate of slot.candidates) {
+      if (normalizeTeamName(candidate.name) === normalized) {
+        return candidate.name;
+      }
     }
   }
 
@@ -169,6 +276,10 @@ export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSu
       });
       continue;
     }
+
+    applyPlayInWinnerIfNeeded(team1, team2, winner);
+    results = getResults();
+    gameDefinitions = buildCurrentGameDefinitions(results);
 
     const matchingGame = gameDefinitions.find(
       (game) =>
@@ -251,6 +362,44 @@ export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSu
     skipped,
     finalResultsSeen: dedupedResults.size,
   };
+}
+
+function applyPlayInWinnerIfNeeded(team1: string, team2: string, winner: string): void {
+  const slot = PLAY_IN_SLOTS.find((candidateSlot) => {
+    const candidateNames = new Set(candidateSlot.candidates.map((candidate) => candidate.name));
+    return candidateNames.has(team1) && candidateNames.has(team2);
+  });
+
+  if (!slot) {
+    return;
+  }
+
+  const winningTeam = slot.candidates.find((candidate) => candidate.name === winner);
+  if (!winningTeam) {
+    return;
+  }
+
+  addAuditLog("play_in_result_seen", {
+    placeholder: slot.placeholder,
+    team1,
+    team2,
+    winner,
+  });
+
+  if (winner === slot.placeholder) {
+    return;
+  }
+
+  setResult(slot.roundOf64GameIndex, 64, slot.roundOf64Team1, winningTeam.name, null, {
+    source: "play_in",
+    manualOverride: false,
+  });
+  resetTournamentCaches();
+  addAuditLog("play_in_override_applied", {
+    placeholder: slot.placeholder,
+    replacement: winningTeam.name,
+    roundOf64GameIndex: slot.roundOf64GameIndex,
+  });
 }
 
 // ============================================================

@@ -12,6 +12,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
+import Database from "better-sqlite3";
 
 // ============================================================
 // Types
@@ -87,6 +88,44 @@ const SEED_MATCHUP_ORDER = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 1
 
 let _cachedTournament: Tournament | null = null;
 let _cachedMatchupProbabilityTable: number[] | null = null;
+let _cachedInitialOrder: string[] | null = null;
+const PLAY_IN_TEAM_BY_NAME: Record<string, Team> = {
+  Howard: {
+    name: "Howard",
+    seed: 16,
+    region: "Midwest",
+    kenpomRank: 207,
+    netRating: -3.19,
+  },
+  "NC State": {
+    name: "NC State",
+    seed: 11,
+    region: "West",
+    kenpomRank: 34,
+    netRating: 19.6,
+  },
+  Lehigh: {
+    name: "Lehigh",
+    seed: 16,
+    region: "South",
+    kenpomRank: 284,
+    netRating: -10.37,
+  },
+  "Miami OH": {
+    name: "Miami OH",
+    seed: 11,
+    region: "Midwest",
+    kenpomRank: 93,
+    netRating: 8.26,
+  },
+};
+
+const PLAY_IN_SLOT_ROWS = [
+  { gameIndex: 12, placeholder: "Texas" },
+  { gameIndex: 16, placeholder: "UMBC" },
+  { gameIndex: 20, placeholder: "SMU" },
+  { gameIndex: 24, placeholder: "Prairie View A&M" },
+];
 
 /**
  * Load tournament data from the JSON file.
@@ -99,6 +138,18 @@ export function loadTournament(): Tournament {
   const raw = readFileSync(filePath, "utf-8");
   _cachedTournament = JSON.parse(raw) as Tournament;
   return _cachedTournament;
+}
+
+export function resetTournamentCaches(): void {
+  _cachedInitialOrder = null;
+  _cachedMatchupProbabilityTable = null;
+}
+
+function getTournamentTeams(): Team[] {
+  const tournament = loadTournament();
+  const overrides = readPlayInRowOverrides();
+
+  return tournament.teams.map((team) => overrides[team.name] ?? team);
 }
 
 // ============================================================
@@ -121,11 +172,16 @@ export function loadTournament(): Tournament {
  * @returns Array of 64 team names in canonical order
  */
 export function getInitialOrder(): string[] {
+  if (_cachedInitialOrder) {
+    return _cachedInitialOrder;
+  }
+
   const tournament = loadTournament();
+  const teams = getTournamentTeams();
   const order: string[] = [];
 
   for (const region of tournament.regions) {
-    const regionTeams = tournament.teams.filter((t) => t.region === region);
+    const regionTeams = teams.filter((t) => t.region === region);
     for (const seed of SEED_MATCHUP_ORDER) {
       const team = regionTeams.find((t) => t.seed === seed);
       if (!team) {
@@ -138,6 +194,7 @@ export function getInitialOrder(): string[] {
   if (order.length !== 64) {
     throw new Error(`Expected 64 teams, got ${order.length}`);
   }
+  _cachedInitialOrder = order;
   return order;
 }
 
@@ -171,9 +228,8 @@ export function buildMatchupProbabilityTable(): number[] {
     return _cachedMatchupProbabilityTable;
   }
 
-  const tournament = loadTournament();
   const initialOrder = getInitialOrder();
-  const teamsByName = new Map(tournament.teams.map((team) => [team.name, team]));
+  const teamsByName = new Map(getTournamentTeams().map((team) => [team.name, team]));
   const table = new Array<number>(64 * 64).fill(0.5);
 
   for (let a = 0; a < initialOrder.length; a++) {
@@ -198,6 +254,40 @@ export function buildMatchupProbabilityTable(): number[] {
 
   _cachedMatchupProbabilityTable = table;
   return table;
+}
+
+function readPlayInRowOverrides(): Record<string, Team> {
+  const dbPath = join(process.cwd(), "march-madness.db");
+
+  try {
+    const db = new Database(dbPath, { readonly: true });
+    const rows = db
+      .prepare(
+        `SELECT game_index, team2
+         FROM results
+         WHERE game_index IN (12, 16, 20, 24)`
+      )
+      .all() as Array<{ game_index: number; team2: string }>;
+    db.close();
+
+    const overrides: Record<string, Team> = {};
+
+    for (const slot of PLAY_IN_SLOT_ROWS) {
+      const row = rows.find((candidate) => candidate.game_index === slot.gameIndex);
+      if (!row || row.team2 === slot.placeholder) {
+        continue;
+      }
+
+      const replacement = PLAY_IN_TEAM_BY_NAME[row.team2];
+      if (replacement) {
+        overrides[slot.placeholder] = replacement;
+      }
+    }
+
+    return overrides;
+  } catch {
+    return {};
+  }
 }
 
 /**

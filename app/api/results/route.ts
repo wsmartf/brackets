@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 import { addAuditLog, getResult, getResults, setResult } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import { resetTournamentCaches } from "@/lib/tournament";
 
 export async function GET() {
   const results = getResults();
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
     source: "manual",
     manualOverride: winner !== null,
   });
+  resetTournamentCaches();
   addAuditLog(winner === null ? "result_cleared" : "result_set", {
     gameIndex: game_index,
     round,

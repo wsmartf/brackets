@@ -38,9 +38,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Audit log complete and locally verified
 - Full-round weighted probabilities complete and locally verified
 - ESPN integration complete and locally verified
+- First Four runtime substitution complete and locally verified
 
 ## Next Step
-Handle the First Four/play-in winners via runtime substitution rather than live source-file edits.
+Do final end-to-end verification, tighten docs/runbooks where behavior changed, and hand off the host-machine restart/release checks.
 
 ## Affected Areas
 - `app/api/*`
