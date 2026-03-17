@@ -36,9 +36,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Admin auth complete and locally verified
 - Refresh lock and status complete and locally verified
 - Audit log complete and locally verified
+- Full-round weighted probabilities complete and locally verified
 
 ## Next Step
-Implement the full-round weighted KenPom matchup probabilities via a precomputed table.
+Wire ESPN final-result ingestion into refresh while keeping manual override available.
 
 ## Affected Areas
 - `app/api/*`

@@ -12,7 +12,11 @@
 import { Worker } from "worker_threads";
 import { join } from "path";
 import { cpus } from "os";
-import { buildProbabilityTable, getInitialOrder, computeBitmasks } from "./tournament";
+import {
+  buildMatchupProbabilityTable,
+  getInitialOrder,
+  computeBitmasks,
+} from "./tournament";
 import { getResults, initDb, setStats } from "./db";
 
 // ============================================================
@@ -59,7 +63,7 @@ export interface AnalysisResult {
 export async function runAnalysis(): Promise<AnalysisResult> {
   initDb();
   const initialOrder = getInitialOrder();
-  const probabilities = buildProbabilityTable();
+  const matchupProbabilities = buildMatchupProbabilityTable();
   const results = getResults();
 
   // Compute bitmasks from known results
@@ -124,7 +128,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
         worker.postMessage({
           startIndex,
           endIndex,
-          probabilities,
+          matchupProbabilities,
           maskLo,
           maskHi,
           valueLo,

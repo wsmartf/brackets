@@ -78,6 +78,7 @@ const SEED_MATCHUP_ORDER = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 1
 // ============================================================
 
 let _cachedTournament: Tournament | null = null;
+let _cachedMatchupProbabilityTable: number[] | null = null;
 
 /**
  * Load tournament data from the JSON file.
@@ -150,50 +151,45 @@ export function computeProbability(netRatingA: number, netRatingB: number): numb
 }
 
 /**
- * Build the full probability table for all 63 games.
+ * Build a full `64 x 64` probability table keyed by initial-order team index.
  *
- * IMPORTANT: For rounds after Round of 64, the matchup depends on who advanced.
- * Since each bracket has different outcomes, we can't pre-compute later-round
- * probabilities statically.
+ * table[a * 64 + b] = P(team a beats team b)
  *
- * SIMPLIFICATION FOR V1: Use a flat 63-probability array where later-round
- * probabilities are set to 0.5 (coin flip). This is "wrong" in that later-round
- * matchup probabilities should depend on who advanced, but:
- * - It's much simpler to implement
- * - The PRNG still produces deterministic brackets
- * - The brackets are still "reasonable" (weighted in round 1, random after)
- * - We can improve this in V2 by doing per-bracket dynamic probability computation
- *
- * BETTER APPROACH (implement if time allows): For each bracket, after determining
- * round N winners, compute round N+1 probabilities dynamically before generating
- * round N+1 outcomes. This requires the PRNG calls to be ordered round-by-round
- * (which they already are by the canonical game ordering).
- *
- * @returns Array of 63 probabilities. probabilities[i] = P(team1 wins game i),
- *          where team1 is the first team in canonical order for that game.
+ * This lets the worker dynamically evaluate later-round matchups without
+ * recomputing logistic probabilities in the hot loop.
  */
-export function buildProbabilityTable(): number[] {
+export function buildMatchupProbabilityTable(): number[] {
+  if (_cachedMatchupProbabilityTable) {
+    return _cachedMatchupProbabilityTable;
+  }
+
   const tournament = loadTournament();
   const initialOrder = getInitialOrder();
-  const probs: number[] = new Array(63);
+  const teamsByName = new Map(tournament.teams.map((team) => [team.name, team]));
+  const table = new Array<number>(64 * 64).fill(0.5);
 
-  // Round of 64: games 0-31 (32 games)
-  // Teams are in pairs: initialOrder[0] vs [1], [2] vs [3], etc.
-  for (let i = 0; i < 32; i++) {
-    const team1Name = initialOrder[i * 2];
-    const team2Name = initialOrder[i * 2 + 1];
-    const team1 = tournament.teams.find((t) => t.name === team1Name)!;
-    const team2 = tournament.teams.find((t) => t.name === team2Name)!;
-    probs[i] = computeProbability(team1.netRating, team2.netRating);
+  for (let a = 0; a < initialOrder.length; a++) {
+    const teamA = teamsByName.get(initialOrder[a]);
+    if (!teamA) {
+      throw new Error(`Missing tournament team: ${initialOrder[a]}`);
+    }
+
+    for (let b = 0; b < initialOrder.length; b++) {
+      if (a === b) {
+        continue;
+      }
+
+      const teamB = teamsByName.get(initialOrder[b]);
+      if (!teamB) {
+        throw new Error(`Missing tournament team: ${initialOrder[b]}`);
+      }
+
+      table[a * 64 + b] = computeProbability(teamA.netRating, teamB.netRating);
+    }
   }
 
-  // Later rounds: set to 0.5 for V1 simplification
-  // TODO: Implement dynamic probability computation per-bracket for V2
-  for (let i = 32; i < 63; i++) {
-    probs[i] = 0.5;
-  }
-
-  return probs;
+  _cachedMatchupProbabilityTable = table;
+  return table;
 }
 
 /**

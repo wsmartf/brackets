@@ -11,7 +11,7 @@
  *   Main → Worker: {
  *     startIndex: number,
  *     endIndex: number,
- *     probabilities: number[],   // 63 win probabilities
+ *     matchupProbabilities: number[], // flattened 64x64 table
  *     maskLo: number,
  *     maskHi: number,
  *     valueLo: number,
@@ -35,7 +35,7 @@ if (parentPort) {
     const {
       startIndex,
       endIndex,
-      probabilities,
+      matchupProbabilities,
       maskLo,
       maskHi,
       valueLo,
@@ -43,7 +43,7 @@ if (parentPort) {
     } = msg as {
       startIndex: number;
       endIndex: number;
-      probabilities: number[];
+      matchupProbabilities: number[];
       maskLo: number;
       maskHi: number;
       valueLo: number;
@@ -78,8 +78,9 @@ if (parentPort) {
         const rand = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         const team1 = currentRound[i * 2];
         const team2 = currentRound[i * 2 + 1];
+        const probability = matchupProbabilities[team1 * 64 + team2];
 
-        if (rand >= probabilities[i]) {
+        if (rand >= probability) {
           lo |= 1 << i;
           nextRound[nextSize++] = team2;
         } else {
@@ -104,8 +105,9 @@ if (parentPort) {
         const pairIndex = nextSize * 2;
         const team1 = currentRound[pairIndex];
         const team2 = currentRound[pairIndex + 1];
+        const probability = matchupProbabilities[team1 * 64 + team2];
 
-        if (rand >= probabilities[gameIndex]) {
+        if (rand >= probability) {
           hi |= 1 << (gameIndex - 32);
           nextRound[nextSize++] = team2;
         } else {
