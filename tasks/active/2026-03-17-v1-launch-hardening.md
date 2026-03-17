@@ -33,9 +33,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Task briefs exist
 - Base analysis engine and dashboard are running
 - Makefile-based workflow exists
+- Admin auth complete and locally verified
 
 ## Next Step
-Implement admin auth and document the exact admin `curl` commands in the README.
+Implement the refresh lock and expose enough status for the UI and API to know whether analysis is already running.
 
 ## Affected Areas
 - `app/api/*`

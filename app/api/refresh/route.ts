@@ -18,8 +18,14 @@
 
 import { NextResponse } from "next/server";
 import { runAnalysis } from "@/lib/analyze";
+import { requireAdmin } from "@/lib/admin";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) {
+    return authError;
+  }
+
   // TODO: Optionally fetch ESPN scores first
   // const url = new URL(request.url);
   // if (url.searchParams.get("espn") === "true") {

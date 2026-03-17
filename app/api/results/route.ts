@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { getResults, setResult } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin";
 
 export async function GET() {
   const results = getResults();
@@ -20,6 +21,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) {
+    return authError;
+  }
+
   const body = await request.json();
   const { game_index, round, team1, team2, winner } = body;
 

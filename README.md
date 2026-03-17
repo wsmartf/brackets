@@ -30,6 +30,14 @@ make dev
 
 Open `http://localhost:3000`.
 
+To use admin routes locally, set an admin token first:
+
+```bash
+cat > .env.local <<'EOF'
+ADMIN_TOKEN=replace-me
+EOF
+```
+
 ## Validation
 Quick validation:
 
