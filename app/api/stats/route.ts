@@ -15,9 +15,11 @@
 import { NextResponse } from "next/server";
 import { getStats } from "@/lib/db";
 import { NUM_BRACKETS } from "@/lib/analyze";
+import { getAnalysisStatus } from "@/lib/analysis-status";
 
 export async function GET() {
   const raw = getStats("analysis");
+  const analysisStatus = getAnalysisStatus();
 
   if (!raw) {
     return NextResponse.json({
@@ -26,8 +28,12 @@ export async function GET() {
       gamesCompleted: 0,
       championshipProbs: {},
       analyzedAt: null,
+      analysisStatus,
     });
   }
 
-  return NextResponse.json(JSON.parse(raw));
+  return NextResponse.json({
+    ...(JSON.parse(raw) as object),
+    analysisStatus,
+  });
 }

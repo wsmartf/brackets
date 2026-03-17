@@ -34,9 +34,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Base analysis engine and dashboard are running
 - Makefile-based workflow exists
 - Admin auth complete and locally verified
+- Refresh lock and status complete and locally verified
 
 ## Next Step
-Implement the refresh lock and expose enough status for the UI and API to know whether analysis is already running.
+Add a simple audit trail for manual admin actions and future ESPN-applied changes.
 
 ## Affected Areas
 - `app/api/*`

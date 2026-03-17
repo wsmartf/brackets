@@ -21,6 +21,13 @@ interface DashboardProps {
     totalBrackets: number;
     gamesCompleted: number;
     analyzedAt: string | null;
+    analysisStatus?: {
+      isRunning: boolean;
+      lastStartedAt: string | null;
+      lastFinishedAt: string | null;
+      lastError: string | null;
+      triggerSource: string | null;
+    };
   };
   onRefresh: () => Promise<void>;
   isRefreshing: boolean;
@@ -29,6 +36,7 @@ interface DashboardProps {
 export default function Dashboard({ stats, onRefresh, isRefreshing }: DashboardProps) {
   const pctRemaining = ((stats.remaining / stats.totalBrackets) * 100).toFixed(4);
   const pctComplete = ((stats.gamesCompleted / 63) * 100).toFixed(0);
+  const isAnalysisRunning = stats.analysisStatus?.isRunning ?? false;
 
   return (
     <div className="space-y-6">
@@ -60,19 +68,25 @@ export default function Dashboard({ stats, onRefresh, isRefreshing }: DashboardP
       </div>
 
       {/* Refresh button + timestamp */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <button
           onClick={onRefresh}
-          disabled={isRefreshing}
+          disabled={isRefreshing || isAnalysisRunning}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded text-sm transition-colors"
         >
-          {isRefreshing ? "Analyzing..." : "Refresh Analysis"}
+          {isRefreshing || isAnalysisRunning ? "Analyzing..." : "Refresh Analysis"}
         </button>
-        {stats.analyzedAt && (
-          <span className="text-xs text-gray-500">
-            Last updated: {new Date(stats.analyzedAt).toLocaleString()}
-          </span>
-        )}
+        <div className="text-right text-xs text-gray-500 space-y-1">
+          {isAnalysisRunning && stats.analysisStatus?.lastStartedAt && (
+            <p>Analysis in progress since {new Date(stats.analysisStatus.lastStartedAt).toLocaleString()}</p>
+          )}
+          {stats.analyzedAt && (
+            <p>Last updated: {new Date(stats.analyzedAt).toLocaleString()}</p>
+          )}
+          {stats.analysisStatus?.lastError && (
+            <p className="text-red-400">Last refresh failed: {stats.analysisStatus.lastError}</p>
+          )}
+        </div>
       </div>
     </div>
   );

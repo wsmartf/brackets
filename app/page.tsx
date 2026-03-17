@@ -18,6 +18,13 @@ interface Stats {
   gamesCompleted: number;
   analyzedAt: string | null;
   championshipProbs?: Record<string, number>;
+  analysisStatus?: {
+    isRunning: boolean;
+    lastStartedAt: string | null;
+    lastFinishedAt: string | null;
+    lastError: string | null;
+    triggerSource: string | null;
+  };
 }
 
 interface GameResult {
@@ -69,10 +76,15 @@ export default function Home() {
     try {
       const res = await fetch("/api/refresh", { method: "POST" });
       const data = await res.json();
-      setStats(data);
+      if (res.ok) {
+        setStats(data);
+      } else {
+        await fetchStats();
+      }
       await fetchResults();
     } catch (err) {
       console.error("Failed to refresh:", err);
+      await fetchStats();
     } finally {
       setIsRefreshing(false);
     }
