@@ -1,65 +1,103 @@
-import Image from "next/image";
+/**
+ * Main dashboard page.
+ *
+ * Fetches stats and results on load, renders the dashboard components.
+ * "Refresh" button triggers a full analysis (may take 2-3 min for 1B brackets).
+ */
+
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import Dashboard from "@/components/Dashboard";
+import ProbabilityBars from "@/components/ProbabilityBars";
+import GameFeed from "@/components/GameFeed";
+
+interface Stats {
+  remaining: number;
+  totalBrackets: number;
+  gamesCompleted: number;
+  analyzedAt: string | null;
+  championshipProbs?: Record<string, number>;
+}
+
+interface GameResult {
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+  winner: string | null;
+  updated_at: string;
+}
 
 export default function Home() {
+  const [stats, setStats] = useState<Stats>({
+    remaining: 1_000_000_000,
+    totalBrackets: 1_000_000_000,
+    gamesCompleted: 0,
+    analyzedAt: null,
+  });
+  const [results, setResults] = useState<GameResult[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    }
+  }, []);
+
+  const fetchResults = useCallback(async () => {
+    try {
+      const res = await fetch("/api/results");
+      const data = await res.json();
+      setResults(data);
+    } catch (err) {
+      console.error("Failed to fetch results:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    fetchResults();
+  }, [fetchStats, fetchResults]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/refresh", { method: "POST" });
+      const data = await res.json();
+      setStats(data);
+      await fetchResults();
+    } catch (err) {
+      console.error("Failed to refresh:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+        <h1 className="text-2xl font-bold text-center">
+          March Madness 2026
+        </h1>
+        <p className="text-center text-gray-400 text-sm">
+          Tracking 1 billion generated brackets against reality
+        </p>
+
+        <Dashboard
+          stats={stats}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <ProbabilityBars probs={stats.championshipProbs ?? {}} />
+
+        <GameFeed results={results} />
+      </div>
+    </main>
   );
 }

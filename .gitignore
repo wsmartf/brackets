@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sqlite database
+march-madness.db
+march-madness.db-wal
+march-madness.db-shm
