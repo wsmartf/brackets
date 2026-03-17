@@ -46,3 +46,5 @@ march-madness.db-wal
 march-madness.db-shm
 
 .vscode
+
+.codex
