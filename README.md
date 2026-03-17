@@ -130,6 +130,13 @@ Inspect stats:
 curl "$ADMIN_BASE_URL/api/stats"
 ```
 
+Inspect audit log:
+
+```bash
+curl "$ADMIN_BASE_URL/api/audit?limit=20" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ## Data And Runtime State
 - Static tournament input: [data/tournament-2026.json](/Users/willsmart/dev/brackets/data/tournament-2026.json)
 - Runtime DB: `march-madness.db`

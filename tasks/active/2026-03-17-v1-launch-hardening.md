@@ -35,9 +35,10 @@ Finish the remaining work needed to safely run the public site for tournament da
 - Makefile-based workflow exists
 - Admin auth complete and locally verified
 - Refresh lock and status complete and locally verified
+- Audit log complete and locally verified
 
 ## Next Step
-Add a simple audit trail for manual admin actions and future ESPN-applied changes.
+Implement the full-round weighted KenPom matchup probabilities via a precomputed table.
 
 ## Affected Areas
 - `app/api/*`

@@ -24,6 +24,7 @@ import {
   getAnalysisStatus,
   startAnalysisRun,
 } from "@/lib/analysis-status";
+import { addAuditLog } from "@/lib/db";
 
 export async function POST(request: Request) {
   const authError = requireAdmin(request);
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
     );
   }
 
+  addAuditLog("refresh_started", { triggerSource: "manual" });
+
   try {
     // TODO: Optionally fetch ESPN scores first
     // const url = new URL(request.url);
@@ -50,9 +53,19 @@ export async function POST(request: Request) {
 
     const stats = await runAnalysis();
     const analysisStatus = finishAnalysisRun();
+    addAuditLog("refresh_succeeded", {
+      triggerSource: "manual",
+      remaining: stats.remaining,
+      gamesCompleted: stats.gamesCompleted,
+      analyzedAt: stats.analyzedAt,
+    });
     return NextResponse.json({ ...stats, analysisStatus });
   } catch (error) {
     const analysisStatus = finishAnalysisRun(error);
+    addAuditLog("refresh_failed", {
+      triggerSource: "manual",
+      error: analysisStatus.lastError,
+    });
     return NextResponse.json(
       {
         error: analysisStatus.lastError ?? "Analysis failed",

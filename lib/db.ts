@@ -30,6 +30,13 @@ export interface GameResult {
   updated_at: string;
 }
 
+export interface AuditLogEntry {
+  id: number;
+  created_at: string;
+  action: string;
+  details: string;
+}
+
 // ============================================================
 // Database Singleton
 // ============================================================
@@ -61,6 +68,13 @@ function initSchema(db: Database.Database): void {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,
       updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      details TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
     );
   `);
 }
@@ -116,6 +130,16 @@ export function setResult(
        winner = excluded.winner,
        updated_at = excluded.updated_at`
   ).run(gameIndex, round, team1, team2, winner);
+}
+
+export function getResult(gameIndex: number): GameResult | null {
+  initDb();
+  const db = getDb();
+  return (
+    (db.prepare("SELECT * FROM results WHERE game_index = ?").get(gameIndex) as
+      | GameResult
+      | undefined) ?? null
+  );
 }
 
 /**
@@ -183,4 +207,26 @@ export function setStats(key: string, value: string): void {
        value = excluded.value,
        updated_at = excluded.updated_at`
   ).run(key, value);
+}
+
+export function addAuditLog(action: string, details: Record<string, unknown>): void {
+  initDb();
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO audit_log (action, details, created_at)
+     VALUES (?, ?, datetime('now'))`
+  ).run(action, JSON.stringify(details));
+}
+
+export function listAuditLog(limit = 50): AuditLogEntry[] {
+  initDb();
+  const db = getDb();
+  return db
+    .prepare(
+      `SELECT id, action, details, created_at
+       FROM audit_log
+       ORDER BY id DESC
+       LIMIT ?`
+    )
+    .all(limit) as AuditLogEntry[];
 }

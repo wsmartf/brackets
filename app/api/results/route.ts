@@ -12,7 +12,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { getResults, setResult } from "@/lib/db";
+import { addAuditLog, getResult, getResults, setResult } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 
 export async function GET() {
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { game_index, round, team1, team2, winner } = body;
+  const previous = typeof game_index === "number" ? getResult(game_index) : null;
 
   if (
     typeof game_index !== "number" ||
@@ -50,5 +51,14 @@ export async function POST(request: Request) {
   }
 
   setResult(game_index, round, team1, team2, winner);
+  addAuditLog(winner === null ? "result_cleared" : "result_set", {
+    gameIndex: game_index,
+    round,
+    team1,
+    team2,
+    previousWinner: previous?.winner ?? null,
+    winner,
+  });
+
   return NextResponse.json({ success: true });
 }
