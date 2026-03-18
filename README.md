@@ -4,6 +4,8 @@ Track how many of 1 billion deterministic March Madness brackets still match rea
 
 This app does not store brackets. Each bracket is reconstructed on demand from an integer index used as a PRNG seed. Real results are stored in SQLite, and analysis scans the configured bracket space to count which generated brackets are still alive.
 
+Matchup probabilities come from a frozen V2 logistic-regression model trained on historical NCAA tournament games using KenPom-derived team features.
+
 For architecture constraints, see [docs/architecture/overview.md](/Users/willsmart/dev/brackets/docs/architecture/overview.md).
 
 ## Repo API

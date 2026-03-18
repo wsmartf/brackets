@@ -13,6 +13,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import Database from "better-sqlite3";
+import v2Model from "@/data/model-v2.json";
 
 // ============================================================
 // Types
@@ -30,6 +31,10 @@ export interface Team {
    * This is what drives the win probability model.
    */
   netRating: number;
+  offenseRating: number;
+  defenseRating: number;
+  adjTempo: number;
+  scheduleNetRating: number;
 }
 
 export interface Tournament {
@@ -58,24 +63,6 @@ export interface GameResultLike {
 // ============================================================
 
 /**
- * Steepness of the logistic function for win probability.
- * Uses KenPom AdjEM (net rating) directly as input.
- *
- * Calibrated against historical NCAA tournament upset rates:
- *   BETA=0.07 produces:
- *   - 1v16 (rating diff ~40): ~95% (historical: ~98.5%)
- *   - 5v12 (rating diff ~14): ~73% (historical: ~65%)
- *   - 8v9  (rating diff ~5):  ~58% (historical: ~53%)
- *   - 4v13 (rating diff ~18): ~78% (historical: ~80%)
- *
- * A single beta can't perfectly fit all matchup types. This is a reasonable
- * compromise that produces brackets with realistic upset frequency.
- * A more sophisticated model would use a lookup table per seed matchup,
- * but this is good enough for V1.
- */
-const BETA = 0.07;
-
-/**
  * Standard NCAA bracket matchup order within each region.
  * Seeds are paired: (1v16), (8v9), (5v12), (4v13), (6v11), (3v14), (7v10), (2v15)
  * This is the standard order used by the NCAA for bracket positioning.
@@ -95,28 +82,44 @@ const PLAY_IN_TEAM_BY_NAME: Record<string, Team> = {
     seed: 16,
     region: "Midwest",
     kenpomRank: 207,
-    netRating: -3.19,
+    netRating: -2.92,
+    offenseRating: 104.1,
+    defenseRating: 107.0,
+    adjTempo: 69.1,
+    scheduleNetRating: -14.04,
   },
   "NC State": {
     name: "NC State",
     seed: 11,
     region: "West",
     kenpomRank: 34,
-    netRating: 19.6,
+    netRating: 19.62,
+    offenseRating: 124.1,
+    defenseRating: 104.4,
+    adjTempo: 69.1,
+    scheduleNetRating: 11.99,
   },
   Lehigh: {
     name: "Lehigh",
     seed: 16,
     region: "South",
     kenpomRank: 284,
-    netRating: -10.37,
+    netRating: -10.41,
+    offenseRating: 102.7,
+    defenseRating: 113.1,
+    adjTempo: 66.9,
+    scheduleNetRating: -8.65,
   },
   "Miami OH": {
     name: "Miami OH",
     seed: 11,
     region: "Midwest",
     kenpomRank: 93,
-    netRating: 8.26,
+    netRating: 8.24,
+    offenseRating: 116.8,
+    defenseRating: 108.5,
+    adjTempo: 70.0,
+    scheduleNetRating: -5.37,
   },
 };
 
@@ -202,17 +205,42 @@ export function getInitialOrder(): string[] {
 // Win Probability
 // ============================================================
 
+function logistic(x: number): number {
+  return 1 / (1 + Math.exp(-x));
+}
+
+function standardize(feature: keyof typeof v2Model.standardization, value: number): number {
+  const { mean, std } = v2Model.standardization[feature];
+  return (value - mean) / std;
+}
+
 /**
- * Compute win probability for team A vs team B using KenPom AdjEM.
- * Higher netRating = better team. Uses logistic function on rating difference.
+ * Compute win probability for team A vs team B using the frozen V2 logistic model.
  *
- * @param netRatingA - KenPom AdjEM of team A (e.g. 38.9 for Duke)
- * @param netRatingB - KenPom AdjEM of team B
- * @returns Probability that team A wins (0 to 1)
+ * The model was trained offline on historical NCAA tournament games using
+ * matchup feature differences. Production uses the exported coefficients and
+ * standardization constants directly.
  */
-export function computeProbability(netRatingA: number, netRatingB: number): number {
-  const diff = netRatingA - netRatingB;
-  return 1 / (1 + Math.exp(-BETA * diff));
+export function computeProbability(teamA: Team, teamB: Team): number {
+  const linear =
+    v2Model.bias +
+    v2Model.weights.netRatingDiff *
+      standardize("netRatingDiff", teamA.netRating - teamB.netRating) +
+    v2Model.weights.offenseRatingDiff *
+      standardize("offenseRatingDiff", teamA.offenseRating - teamB.offenseRating) +
+    v2Model.weights.defenseRatingDiff *
+      standardize("defenseRatingDiff", teamA.defenseRating - teamB.defenseRating) +
+    v2Model.weights.adjTempoDiff *
+      standardize("adjTempoDiff", teamA.adjTempo - teamB.adjTempo) +
+    v2Model.weights.scheduleNetRatingDiff *
+      standardize(
+        "scheduleNetRatingDiff",
+        teamA.scheduleNetRating - teamB.scheduleNetRating
+      ) +
+    v2Model.weights.seedNumDiff *
+      standardize("seedNumDiff", teamA.seed - teamB.seed);
+
+  return logistic(linear);
 }
 
 /**
@@ -248,7 +276,7 @@ export function buildMatchupProbabilityTable(): number[] {
         throw new Error(`Missing tournament team: ${initialOrder[b]}`);
       }
 
-      table[a * 64 + b] = computeProbability(teamA.netRating, teamB.netRating);
+      table[a * 64 + b] = computeProbability(teamA, teamB);
     }
   }
 

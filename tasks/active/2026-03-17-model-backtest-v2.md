@@ -19,13 +19,16 @@ The immediate objective is not "AI" or a giant feature set. It is:
 The current production model lives in [lib/tournament.ts](/Users/willsmart/dev/brackets/lib/tournament.ts).
 
 Today it does this:
-- each team has one strength number: `netRating`
-- for any matchup, compute:
-  - `P(teamA beats teamB) = logistic(BETA * (netRatingA - netRatingB))`
-- `BETA` is currently a hand-chosen constant: `0.07`
+- each team has a small set of KenPom-derived features:
+  - `netRating`
+  - `offenseRating`
+  - `defenseRating`
+  - `adjTempo`
+  - `scheduleNetRating`
+- for any matchup, compute feature differences, standardize them with frozen training-time constants, and score them with the exported V2 logistic-regression coefficients
 - the app precomputes a `64 x 64` matchup table and uses that for all rounds
 
-This is simple and fast, but limited.
+This remains simple operationally, but is stronger than the original single-parameter `AdjEM` logistic baseline.
 
 ## Core Concepts
 ### Matchup model

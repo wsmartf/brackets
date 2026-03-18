@@ -7,6 +7,7 @@ This app tracks how many of 1 billion deterministic March Madness brackets still
 - A bracket is identified by an integer index from `0` to `999,999,999`.
 - That index seeds a deterministic PRNG.
 - The PRNG drives 63 game outcomes in canonical bracket order.
+- Each game uses a frozen V2 logistic-regression matchup model built from KenPom-derived team feature differences.
 - Brackets are reconstructed on demand and never stored.
 
 ## Core Flow

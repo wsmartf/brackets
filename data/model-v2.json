@@ -1,0 +1,52 @@
+{
+  "version": "v2-logreg-2026-03-17",
+  "trainedOn": "train+validate",
+  "features": [
+    "netRatingDiff",
+    "offenseRatingDiff",
+    "defenseRatingDiff",
+    "adjTempoDiff",
+    "scheduleNetRatingDiff",
+    "seedNumDiff"
+  ],
+  "bias": -0.096301,
+  "weights": {
+    "netRatingDiff": 1.042569,
+    "offenseRatingDiff": 0.854475,
+    "defenseRatingDiff": -0.852607,
+    "adjTempoDiff": 0.027664,
+    "scheduleNetRatingDiff": 0.38891,
+    "seedNumDiff": 0.728995
+  },
+  "standardization": {
+    "netRatingDiff": {
+      "mean": -0.139091,
+      "std": 12.721526
+    },
+    "offenseRatingDiff": {
+      "mean": 0.180383,
+      "std": 8.290501
+    },
+    "defenseRatingDiff": {
+      "mean": 0.321531,
+      "std": 7.233397
+    },
+    "adjTempoDiff": {
+      "mean": 0.225359,
+      "std": 4.322065
+    },
+    "scheduleNetRatingDiff": {
+      "mean": -0.220775,
+      "std": 7.729902
+    },
+    "seedNumDiff": {
+      "mean": 0.080383,
+      "std": 7.488252
+    }
+  },
+  "holdoutMetrics": {
+    "logLoss": 0.498025,
+    "brierScore": 0.163955,
+    "accuracy": 0.742537
+  }
+}
