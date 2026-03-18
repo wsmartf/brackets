@@ -16,6 +16,7 @@ make verify
 make build
 make analyze
 make analyze-smoke
+make collision-stats
 ```
 
 ## Requirements
@@ -56,6 +57,13 @@ Full analysis:
 
 ```bash
 make analyze
+```
+
+Collision sampling for duplicate-seed analysis:
+
+```bash
+make collision-stats
+COLLISION_NUM_BRACKETS=1000000 make collision-stats
 ```
 
 ## How The Bracket Space Works

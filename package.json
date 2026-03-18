@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "analyze": "node --require tsx/cjs scripts/analyze.cjs"
+    "analyze": "node --require tsx/cjs scripts/analyze.cjs",
+    "collision-stats": "node --require tsx/cjs scripts/collision-stats.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
