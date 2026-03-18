@@ -159,6 +159,25 @@ The intended production model is:
 - run `npm run start` under `pm2`
 - expose the app via Cloudflare Tunnel
 
+For a custom public hostname, the recommended setup is:
+- app served on the host Mac at `http://127.0.0.1:3000`
+- Cloudflare Tunnel publishing `https://brackets.willjsmart.com`
+- remote admin calls using the same bearer token
+
+Remote admin example:
+
+```bash
+export ADMIN_BASE_URL='https://brackets.willjsmart.com'
+export ADMIN_TOKEN='replace-me'
+```
+
+```bash
+curl -X POST "$ADMIN_BASE_URL/api/refresh" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+For tournament-day operations, see [docs/runbooks/tournament-day.md](/Users/willsmart/dev/brackets/docs/runbooks/tournament-day.md).
+
 ## Current Product Scope
 - 1 billion bracket target
 - SQLite-backed cached stats and results
