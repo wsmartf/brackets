@@ -106,6 +106,22 @@ time curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   - This is end-to-end wall-clock time as seen from the admin client.
   - `espnSummary` was `null` because the run used `?espn=false`.
 
+## Collision Sampling Result
+- Date: 2026-03-17
+- Command: `COLLISION_NUM_BRACKETS=100000000 make collision-stats`
+- Sample size: `100,000,000`
+- Elapsed time: `38.781s`
+- Peak RSS: `839.3 MB`
+- Unique brackets: `99,999,931`
+- Duplicate seeds: `69`
+- Duplicate seed rate: `0.000069%`
+- Colliding bracket count: `69`
+- Max multiplicity: `2`
+- Notes:
+  - No bracket appeared more than twice in the `100M` sample.
+  - Collision rate appears operationally negligible for the current `1B` production target.
+  - This does not justify adding a precomputed dedupe pass for V1.
+
 ## Follow-Up
 After the benchmark:
 - add the measured runtime to `docs/runbooks/deploy.md` or `README.md` if useful
