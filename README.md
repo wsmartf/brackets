@@ -17,6 +17,7 @@ make build
 make analyze
 make analyze-smoke
 make collision-stats
+make backtest-current-model
 ```
 
 ## Requirements
@@ -64,6 +65,12 @@ Collision sampling for duplicate-seed analysis:
 ```bash
 make collision-stats
 COLLISION_NUM_BRACKETS=1000000 make collision-stats
+```
+
+Historical baseline backtest for the current probability model:
+
+```bash
+make backtest-current-model
 ```
 
 ## How The Bracket Space Works

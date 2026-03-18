@@ -226,9 +226,30 @@ If V2 wins the backtest:
 
 ## Current Status
 - Current production model exists and is stable.
-- Historical backtest dataset has not been assembled yet.
+- Historical tournament matchup dataset has been assembled from Kaggle tournament results/seeds and normalized KenPom ratings.
 - `data.csv` exists locally and may provide useful richer features, but provenance and historical availability are still unknown.
-- No offline model-evaluation pipeline exists yet.
+- A baseline backtest script for the current production model now exists and should be run before attempting a richer V2.
+
+## Baseline Findings
+Historical backtest on `2002-2025` NCAA tournament games:
+
+- Current production `BETA=0.07`
+  - all-game log loss: `0.530672`
+  - all-game Brier score: `0.176108`
+  - all-game accuracy: `0.757436`
+  - holdout (`2022-2025`) log loss: `0.538172`
+  - holdout accuracy: `0.750000`
+
+- Best train-only beta found by simple grid search over the current model form:
+  - best beta on train split: `0.15`
+  - all-game log loss with `beta=0.15`: `0.487692`
+  - holdout log loss with `beta=0.15`: `0.512461`
+  - holdout accuracy with `beta=0.15`: `0.750000`
+
+Interpretation:
+- the current model shape is decent, but `BETA=0.07` appears too flat
+- a steeper slope improves probability quality materially
+- this is strong evidence that calibration/fitting matters before adding a more complex model
 
 ## Open Questions
 - What is the provenance of `data.csv`?
@@ -237,13 +258,16 @@ If V2 wins the backtest:
 - Are historical Vegas lines worth the extra sourcing effort, or should they wait for a later model version?
 
 ## Next Steps
-- Inspect and document `data.csv` provenance.
-- Choose the first historical feature source.
-- Create a small offline data-prep and backtest script set under `scripts/` or a dedicated `model/` folder.
-- Reproduce the current model on historical tournaments before trying anything more advanced.
+- Run the current-model backtest and record its historical log loss, Brier score, accuracy, and calibration.
+- Decide whether the production `BETA=0.07` is already close to the historically best slope.
+- Add a simple V2 logistic-regression training script once the baseline numbers are recorded.
+- Keep `data.csv` out of scope unless its provenance and historical availability become clear.
 
 ## Affected Files
 - [lib/tournament.ts](/Users/willsmart/dev/brackets/lib/tournament.ts)
 - [data/tournament-2026.json](/Users/willsmart/dev/brackets/data/tournament-2026.json)
 - [data.csv](/Users/willsmart/dev/brackets/data.csv)
-- future offline scripts and model artifacts under `scripts/` or `model/`
+- [scripts/normalize_kenpom.py](/Users/willsmart/dev/brackets/scripts/normalize_kenpom.py)
+- [scripts/build_backtest_dataset.py](/Users/willsmart/dev/brackets/scripts/build_backtest_dataset.py)
+- [scripts/backtest_current_model.py](/Users/willsmart/dev/brackets/scripts/backtest_current_model.py)
+- future offline model artifacts under `model/`

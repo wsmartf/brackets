@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke verify
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model verify
 
 install:
 	npm install
@@ -26,6 +26,9 @@ collision-stats:
 
 collision-stats-smoke:
 	COLLISION_NUM_BRACKETS=10000 npm run collision-stats
+
+backtest-current-model:
+	python3 scripts/backtest_current_model.py
 
 verify:
 	npm run typecheck
