@@ -112,6 +112,13 @@ curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
+The refresh endpoint returns `202 Accepted` immediately. Poll cached stats until
+`analysisStatus.isRunning` becomes `false`:
+
+```bash
+curl "$ADMIN_BASE_URL/api/stats"
+```
+
 Refresh analysis without ESPN fetch first:
 
 ```bash

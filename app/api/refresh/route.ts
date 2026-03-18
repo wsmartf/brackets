@@ -1,19 +1,18 @@
 /**
  * POST /api/refresh
  *
- * Triggers a full bracket analysis. This may take 2-3 minutes for 1B brackets.
+ * Starts a full bracket analysis in the background. The work itself may take
+ * 2-3 minutes for 1B brackets.
  *
  * Optionally fetches latest ESPN scores before running analysis.
  *
  * Query params:
- *   ?espn=true  — fetch ESPN scores first (default: false)
+ *   ?espn=false — skip ESPN fetch first (default: ESPN fetch runs)
  *
- * Response: the updated AnalysisResult stats object.
+ * Response: `202 Accepted` with the current analysis status.
  *
- * NOTE: This is a long-running request. In production, you may want to:
- * - Return immediately with a 202 Accepted and poll for completion
- * - Use server-sent events to stream progress
- * - Or just let the client wait (simplest for now)
+ * This route starts the work and returns immediately. Clients should poll
+ * GET /api/stats for completion and updated cached stats.
  */
 
 import { NextResponse } from "next/server";
@@ -27,27 +26,8 @@ import {
 import { addAuditLog } from "@/lib/db";
 import { fetchAndApplyEspnResults } from "@/lib/espn";
 
-export async function POST(request: Request) {
-  const authError = requireAdmin(request);
-  if (authError) {
-    return authError;
-  }
-
-  if (!startAnalysisRun("manual")) {
-    return NextResponse.json(
-      {
-        error: "Analysis is already running",
-        analysisStatus: getAnalysisStatus(),
-      },
-      { status: 409 }
-    );
-  }
-
-  addAuditLog("refresh_started", { triggerSource: "manual" });
-
+async function runRefresh(useEspn: boolean): Promise<void> {
   try {
-    const url = new URL(request.url);
-    const useEspn = url.searchParams.get("espn") !== "false";
     let espnSummary = null;
 
     if (useEspn) {
@@ -68,20 +48,45 @@ export async function POST(request: Request) {
       remaining: stats.remaining,
       gamesCompleted: stats.gamesCompleted,
       analyzedAt: stats.analyzedAt,
+      analysisStatus,
     });
-    return NextResponse.json({ ...stats, analysisStatus, espnSummary });
   } catch (error) {
     const analysisStatus = finishAnalysisRun(error);
     addAuditLog("refresh_failed", {
       triggerSource: "manual",
       error: analysisStatus.lastError,
     });
+  }
+}
+
+export async function POST(request: Request) {
+  const authError = requireAdmin(request);
+  if (authError) {
+    return authError;
+  }
+
+  if (!startAnalysisRun("manual")) {
     return NextResponse.json(
       {
-        error: analysisStatus.lastError ?? "Analysis failed",
-        analysisStatus,
+        error: "Analysis is already running",
+        analysisStatus: getAnalysisStatus(),
       },
-      { status: 500 }
+      { status: 409 }
     );
   }
+
+  addAuditLog("refresh_started", { triggerSource: "manual" });
+
+  const url = new URL(request.url);
+  const useEspn = url.searchParams.get("espn") !== "false";
+
+  void runRefresh(useEspn);
+
+  return NextResponse.json(
+    {
+      ok: true,
+      analysisStatus: getAnalysisStatus(),
+    },
+    { status: 202 }
+  );
 }

@@ -2,13 +2,13 @@
  * Main dashboard page.
  *
  * Fetches stats and results on load, renders the dashboard components.
- * "Refresh" button triggers a full analysis (may take 2-3 min for 1B brackets).
+ * "Refresh" starts a background analysis and the dashboard polls for completion.
  */
 
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Dashboard from "@/components/Dashboard";
 import ProbabilityBars from "@/components/ProbabilityBars";
 import GameFeed from "@/components/GameFeed";
@@ -46,6 +46,7 @@ export default function Home() {
   });
   const [results, setResults] = useState<GameResult[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const previousIsRunningRef = useRef(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -72,17 +73,43 @@ export default function Home() {
     fetchResults();
   }, [fetchStats, fetchResults]);
 
+  useEffect(() => {
+    const intervalMs = stats.analysisStatus?.isRunning ? 3000 : 15000;
+    const intervalId = window.setInterval(() => {
+      void fetchStats();
+    }, intervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchStats, stats.analysisStatus?.isRunning]);
+
+  useEffect(() => {
+    const isRunning = stats.analysisStatus?.isRunning ?? false;
+    if (previousIsRunningRef.current && !isRunning) {
+      void fetchResults();
+    }
+    previousIsRunningRef.current = isRunning;
+  }, [fetchResults, stats.analysisStatus?.isRunning]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       const res = await fetch("/api/refresh", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setStats(data);
+      if (res.status === 202) {
+        const data = await res.json();
+        setStats((current) => ({
+          ...current,
+          analysisStatus: data.analysisStatus,
+        }));
       } else {
-        await fetchStats();
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data);
+        } else {
+          await fetchStats();
+        }
       }
-      await fetchResults();
     } catch (err) {
       console.error("Failed to refresh:", err);
       await fetchStats();

@@ -12,6 +12,8 @@ export ADMIN_TOKEN='replace-me'
 
 curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
+
+curl "$ADMIN_BASE_URL/api/stats"
 ```
 
 5. Check the audit log:
@@ -29,11 +31,17 @@ curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
+  `POST /api/refresh` returns immediately with `202 Accepted`. Poll `GET /api/stats`
+  and wait for `analysisStatus.isRunning` to become `false` before treating the
+  refresh as complete.
+
 - If ESPN is failing, refresh without ESPN:
 
 ```bash
 curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
+
+curl "$ADMIN_BASE_URL/api/stats"
 ```
 
 - Manually set a result if needed:

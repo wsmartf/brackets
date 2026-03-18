@@ -79,6 +79,7 @@ curl "$ADMIN_BASE_URL/api/audit?limit=10" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
+curl "$ADMIN_BASE_URL/api/stats"
 ```
 
 Remote admin from another Mac:
@@ -94,7 +95,10 @@ curl "$ADMIN_BASE_URL/api/audit?limit=10" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
+curl "$ADMIN_BASE_URL/api/stats"
 ```
+
+`POST /api/refresh` now returns immediately with `202 Accepted`. Use `GET /api/stats` to watch `analysisStatus.isRunning` and wait for it to become `false` before trusting the updated cached stats.
 
 ## If Something Goes Wrong
 - If ESPN fetch is failing or slow, use `POST /api/refresh?espn=false`.
