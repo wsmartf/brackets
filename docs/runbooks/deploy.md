@@ -16,7 +16,7 @@
 Initial setup:
 
 ```bash
-pm2 start "npm run start" --name march-madness
+pm2 start node_modules/next/dist/bin/next --name march-madness -- start
 pm2 save
 pm2 startup
 ```
@@ -58,7 +58,8 @@ curl https://brackets.willjsmart.com/api/stats
 ## Pre-Tournament Restart Check
 1. Start the app with `pm2`.
 2. Confirm the site is reachable.
-3. Kill the app process and confirm `pm2` restarts it.
+3. Find the actual listener on port `3000` with `lsof -nP -iTCP:3000 -sTCP:LISTEN`.
+4. Kill that listener PID and confirm `pm2` restarts the app.
 4. Reboot the machine and confirm the app returns.
 5. Confirm SQLite data is intact.
 6. Confirm refresh still works.

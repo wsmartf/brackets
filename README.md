@@ -156,7 +156,7 @@ Use the runbook in [docs/runbooks/deploy.md](/Users/willsmart/dev/brackets/docs/
 
 The intended production model is:
 - build locally on the host Mac
-- run `npm run start` under `pm2`
+- run `next start` under `pm2` directly
 - expose the app via Cloudflare Tunnel
 
 For a custom public hostname, the recommended setup is:
@@ -175,8 +175,6 @@ export ADMIN_TOKEN='replace-me'
 curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
-
-For tournament-day operations, see [docs/runbooks/tournament-day.md](/Users/willsmart/dev/brackets/docs/runbooks/tournament-day.md).
 
 ## Current Product Scope
 - 1 billion bracket target
