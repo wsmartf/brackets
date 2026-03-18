@@ -108,7 +108,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
   //
   // FOR NOW: Install tsx (npm install -D tsx) and use the execArgv approach.
   // This works in both dev (next dev) and production (next start).
-  const workerPath = join(process.cwd(), "lib", "worker.ts");
+  const workerPath = join(process.cwd(), "lib", "worker.mts");
 
   for (let w = 0; w < NUM_WORKERS; w++) {
     const startIndex = w * chunkSize;
