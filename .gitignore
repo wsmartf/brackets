@@ -48,3 +48,6 @@ march-madness.db-shm
 .vscode
 
 .codex
+
+# offline modeling outputs
+kenpom-historical-data/kenpom-ratings.csv
