@@ -87,8 +87,8 @@ time curl -X POST "$ADMIN_BASE_URL/api/refresh" \
 ## Measured Result
 - Date: 2026-03-17
 - Host machine: production Mac
-- CPU: not recorded in this task run
-- Memory: not recorded in this task run
+- CPU: `Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz`
+- Memory: `32 GB`
 - App mode: `pm2` / production build
 - Benchmark 1:
   - Endpoint: `/api/refresh?espn=false`
