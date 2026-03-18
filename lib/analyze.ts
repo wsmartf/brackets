@@ -17,7 +17,7 @@ import {
   getInitialOrder,
   computeBitmasks,
 } from "./tournament";
-import { getResults, initDb, setStats } from "./db";
+import { createSnapshot, getResults, initDb, setStats } from "./db";
 
 // ============================================================
 // Constants
@@ -81,6 +81,11 @@ export async function runAnalysis(): Promise<AnalysisResult> {
       analyzedAt: new Date().toISOString(),
     };
     setStats("analysis", JSON.stringify(stats));
+    createSnapshot({
+      remaining: stats.remaining,
+      gamesCompleted: stats.gamesCompleted,
+      championshipProbs: stats.championshipProbs,
+    });
     return stats;
   }
 
@@ -181,6 +186,11 @@ export async function runAnalysis(): Promise<AnalysisResult> {
 
   // Cache in SQLite
   setStats("analysis", JSON.stringify(stats));
+  createSnapshot({
+    remaining: stats.remaining,
+    gamesCompleted: stats.gamesCompleted,
+    championshipProbs: stats.championshipProbs,
+  });
 
   return stats;
 }

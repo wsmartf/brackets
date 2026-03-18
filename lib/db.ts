@@ -14,6 +14,7 @@
  */
 
 import Database from "better-sqlite3";
+import { createHash } from "crypto";
 import { join } from "path";
 import { buildGameDefinitions } from "./tournament";
 
@@ -37,6 +38,30 @@ export interface AuditLogEntry {
   created_at: string;
   action: string;
   details: string;
+}
+
+interface SnapshotRow {
+  id: number;
+  remaining: number;
+  games_completed: number;
+  championship_probs: string;
+  game_results_hash: string;
+  created_at: string;
+}
+
+export interface Snapshot {
+  id: number;
+  remaining: number;
+  gamesCompleted: number;
+  championshipProbs: Record<string, number>;
+  gameResultsHash: string;
+  createdAt: string;
+}
+
+export interface SnapshotInput {
+  remaining: number;
+  gamesCompleted: number;
+  championshipProbs: Record<string, number>;
 }
 
 // ============================================================
@@ -77,6 +102,15 @@ function initSchema(db: Database.Database): void {
       action TEXT NOT NULL,
       details TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      remaining INTEGER NOT NULL,
+      games_completed INTEGER NOT NULL,
+      championship_probs TEXT NOT NULL,
+      game_results_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
 
@@ -254,4 +288,86 @@ export function listAuditLog(limit = 50): AuditLogEntry[] {
        LIMIT ?`
     )
     .all(limit) as AuditLogEntry[];
+}
+
+function buildGameResultsHash(results: GameResult[]): string {
+  const completedResults = results
+    .filter((result) => result.winner !== null)
+    .map((result) => ({
+      game_index: result.game_index,
+      winner: result.winner,
+    }));
+
+  return createHash("sha256").update(JSON.stringify(completedResults)).digest("hex");
+}
+
+function parseChampionshipProbs(raw: string): Record<string, number> {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, number] => {
+        const [, value] = entry;
+        return typeof value === "number";
+      })
+    );
+  } catch {
+    return {};
+  }
+}
+
+export function createSnapshot(input: SnapshotInput): boolean {
+  initDb();
+  const db = getDb();
+  const gameResultsHash = buildGameResultsHash(getResults());
+  const latestSnapshot = db
+    .prepare(
+      `SELECT game_results_hash
+       FROM snapshots
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`
+    )
+    .get() as { game_results_hash: string } | undefined;
+
+  if (latestSnapshot?.game_results_hash === gameResultsHash) {
+    return false;
+  }
+
+  db.prepare(
+    `INSERT INTO snapshots (
+      remaining,
+      games_completed,
+      championship_probs,
+      game_results_hash,
+      created_at
+    )
+     VALUES (?, ?, ?, ?, datetime('now'))`
+  ).run(
+    input.remaining,
+    input.gamesCompleted,
+    JSON.stringify(input.championshipProbs),
+    gameResultsHash
+  );
+
+  return true;
+}
+
+export function getSnapshots(): Snapshot[] {
+  initDb();
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT id, remaining, games_completed, championship_probs, game_results_hash, created_at
+       FROM snapshots
+       ORDER BY created_at ASC, id ASC`
+    )
+    .all() as SnapshotRow[];
+
+  return rows.map((row) => ({
+    id: row.id,
+    remaining: row.remaining,
+    gamesCompleted: row.games_completed,
+    championshipProbs: parseChampionshipProbs(row.championship_probs),
+    gameResultsHash: row.game_results_hash,
+    createdAt: row.created_at,
+  }));
 }
