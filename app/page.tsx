@@ -7,6 +7,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import Dashboard from "@/components/Dashboard";
 import ProbabilityBars from "@/components/ProbabilityBars";
@@ -93,12 +94,25 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        <h1 className="text-2xl font-bold text-center">
-          March Madness 2026
-        </h1>
-        <p className="text-center text-gray-400 text-sm">
-          Tracking 1 billion generated brackets against reality
-        </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white">
+              Dashboard
+            </span>
+            <Link
+              href="/about"
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              About the Model
+            </Link>
+          </div>
+          <h1 className="text-2xl font-bold text-center">
+            March Madness 2026
+          </h1>
+          <p className="text-center text-gray-400 text-sm">
+            Tracking 1 billion generated brackets against reality
+          </p>
+        </div>
 
         <Dashboard
           stats={stats}

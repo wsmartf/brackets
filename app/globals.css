@@ -24,3 +24,34 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+.about-shell {
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 30%),
+    linear-gradient(180deg, #f7f4ee 0%, #f2efe8 100%);
+}
+
+@media (min-width: 1024px) {
+  .about-pipeline-arrow {
+    position: absolute;
+    top: 50%;
+    right: -0.85rem;
+    width: 1.7rem;
+    height: 2px;
+    background: rgba(87, 83, 78, 0.22);
+    transform: translateY(-50%);
+  }
+
+  .about-pipeline-arrow::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-top: 2px solid rgba(87, 83, 78, 0.35);
+    border-right: 2px solid rgba(87, 83, 78, 0.35);
+    transform: translateY(-50%) rotate(45deg);
+  }
+}
