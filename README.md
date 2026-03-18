@@ -18,6 +18,7 @@ make analyze
 make analyze-smoke
 make collision-stats
 make backtest-current-model
+make train-v2-model
 ```
 
 ## Requirements
@@ -71,6 +72,12 @@ Historical baseline backtest for the current probability model:
 
 ```bash
 make backtest-current-model
+```
+
+Train and evaluate the simple V2 logistic-regression model:
+
+```bash
+make train-v2-model
 ```
 
 ## How The Bracket Space Works

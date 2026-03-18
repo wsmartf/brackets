@@ -251,6 +251,30 @@ Interpretation:
 - a steeper slope improves probability quality materially
 - this is strong evidence that calibration/fitting matters before adding a more complex model
 
+## V2 Findings
+Simple logistic-regression V2 using:
+- `net_rating_diff`
+- `offense_rating_diff`
+- `defense_rating_diff`
+- `adj_tempo_diff`
+- `schedule_net_rating_diff`
+- `seed_num_diff`
+
+Best first-pass result:
+- validation-selected regularization: `0.0`
+- holdout (`2022-2025`) log loss: `0.498025`
+- holdout Brier score: `0.163955`
+- holdout accuracy: `0.742537`
+
+Comparison:
+- tuned one-parameter baseline (`beta=0.15`) holdout log loss: `0.512461`
+- V2 holdout log loss: `0.498025`
+
+Interpretation:
+- V2 improves probability quality on holdout seasons
+- holdout pick accuracy is slightly lower than the tuned baseline, but log loss and Brier are better
+- this is a good sign because the app ultimately needs better probabilities more than slightly better thresholded pick rate
+
 ## Open Questions
 - What is the provenance of `data.csv`?
 - Can we get reliable historical KenPom exports, or should we use Torvik / MasseyOrdinals first?
@@ -258,9 +282,9 @@ Interpretation:
 - Are historical Vegas lines worth the extra sourcing effort, or should they wait for a later model version?
 
 ## Next Steps
-- Run the current-model backtest and record its historical log loss, Brier score, accuracy, and calibration.
-- Decide whether the production `BETA=0.07` is already close to the historically best slope.
-- Add a simple V2 logistic-regression training script once the baseline numbers are recorded.
+- Decide whether to port the current best V2 coefficients into a TypeScript probability function.
+- Before changing production, compare the V2 model and tuned baseline on a few tournament-specific sanity checks.
+- If we ship V2, freeze the coefficients and training-time standardization constants in a compact JSON artifact.
 - Keep `data.csv` out of scope unless its provenance and historical availability become clear.
 
 ## Affected Files
@@ -270,4 +294,5 @@ Interpretation:
 - [scripts/normalize_kenpom.py](/Users/willsmart/dev/brackets/scripts/normalize_kenpom.py)
 - [scripts/build_backtest_dataset.py](/Users/willsmart/dev/brackets/scripts/build_backtest_dataset.py)
 - [scripts/backtest_current_model.py](/Users/willsmart/dev/brackets/scripts/backtest_current_model.py)
+- [scripts/train_v2_model.py](/Users/willsmart/dev/brackets/scripts/train_v2_model.py)
 - future offline model artifacts under `model/`
