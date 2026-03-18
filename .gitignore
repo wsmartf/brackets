@@ -50,4 +50,6 @@ march-madness.db-shm
 .codex
 
 # offline modeling outputs
-kenpom-historical-data/kenpom-ratings.csv
+kenpom-historical-data
+march-machine-learning-mania-2026
+model-data/processed
