@@ -228,10 +228,7 @@ If V2 wins the backtest:
 6. If V2 is clearly better, port it into TypeScript and re-run app-level sanity checks.
 
 ## Current Status
-- Current production model exists and is stable.
-- Historical tournament matchup dataset has been assembled from Kaggle tournament results/seeds and normalized KenPom ratings.
-- `data.csv` exists locally and may provide useful richer features, but provenance and historical availability are still unknown.
-- A baseline backtest script for the current production model now exists and should be run before attempting a richer V2.
+- Completed. Historical tournament matchup data was assembled, the baseline model was backtested, a stronger V2 logistic-regression model was trained and evaluated on holdout seasons, the frozen artifact landed in `data/model-v2.json`, and production was switched to the V2 matchup model in `lib/tournament.ts`.
 
 ## Baseline Findings
 Historical backtest on `2002-2025` NCAA tournament games:
@@ -285,10 +282,7 @@ Interpretation:
 - Are historical Vegas lines worth the extra sourcing effort, or should they wait for a later model version?
 
 ## Next Steps
-- Decide whether to port the current best V2 coefficients into a TypeScript probability function.
-- Before changing production, compare the V2 model and tuned baseline on a few tournament-specific sanity checks.
-- If we ship V2, freeze the coefficients and training-time standardization constants in a compact JSON artifact.
-- Keep `data.csv` out of scope unless its provenance and historical availability become clear.
+- Archived. Further model work should happen in a new task focused on calibration, ensembles, or next-year iteration rather than keeping this backtest task active.
 
 ## Affected Files
 - [lib/tournament.ts](/Users/willsmart/dev/brackets/lib/tournament.ts)
