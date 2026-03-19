@@ -10,9 +10,13 @@ export default function SiteNav({ activePage }: SiteNavProps) {
   return (
     <nav className="bg-[#0d0d12] border-b border-white/8 px-6 py-4">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <span className="text-sm font-semibold tracking-wide text-white/90">
+        <Link
+          href="/"
+          aria-label="Go to homepage"
+          className="text-sm font-semibold tracking-wide text-white/90 transition-colors hover:text-white"
+        >
           Brackets
-        </span>
+        </Link>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             {activePage === "home" ? (
