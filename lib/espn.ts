@@ -1,4 +1,4 @@
-import { addAuditLog, getResults, setResult } from "./db";
+import { addAuditLog, enqueueResultEvent, getResults, setResult } from "./db";
 import {
   buildCurrentGameDefinitions,
   Team,
@@ -191,6 +191,7 @@ export function extractResults(scoreboard: ESPNScoreboard): ESPNGameResult[] {
 
     results.push({
       id: event.id,
+      eventDate: event.date,
       team1: nameA,
       team2: nameB,
       winner,
@@ -274,12 +275,12 @@ function getRecentDateStrings(daysBack: number): string[] {
 }
 
 export interface EspnSyncSummary {
-  applied: number;
+  queued: number;
   skipped: number;
   finalResultsSeen: number;
 }
 
-export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSummary> {
+export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSummary> {
   const dateStrings = getRecentDateStrings(daysBack);
   const scoreboards = await Promise.all(dateStrings.map((date) => fetchScoreboard(date)));
   const dedupedResults = new Map<string, ESPNGameResult>();
@@ -290,12 +291,20 @@ export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSu
     }
   }
 
+  const sortedResults = [...dedupedResults.values()].sort((left, right) => {
+    if (left.eventDate !== right.eventDate) {
+      return left.eventDate.localeCompare(right.eventDate);
+    }
+
+    return left.id.localeCompare(right.id);
+  });
+
   let results = getResults();
   let gameDefinitions = buildCurrentGameDefinitions(results);
-  let applied = 0;
+  let queued = 0;
   let skipped = 0;
 
-  for (const espnResult of dedupedResults.values()) {
+  for (const espnResult of sortedResults) {
     const team1 = mapEspnTeamName(espnResult.team1);
     const team2 = mapEspnTeamName(espnResult.team2);
     const winner = mapEspnTeamName(espnResult.winner);
@@ -369,28 +378,35 @@ export async function fetchAndApplyEspnResults(daysBack = 4): Promise<EspnSyncSu
       continue;
     }
 
-    setResult(matchingGame.game_index, matchingGame.round, matchingGame.team1, matchingGame.team2, winner, {
-      source: "espn",
-      manualOverride: false,
-    });
-    addAuditLog("espn_result_applied", {
+    const wasQueued = enqueueResultEvent({
       gameIndex: matchingGame.game_index,
       round: matchingGame.round,
       team1: matchingGame.team1,
       team2: matchingGame.team2,
       winner,
-      espnResultId: espnResult.id,
-      score1: espnResult.score1,
-      score2: espnResult.score2,
+      source: "espn",
+      espnEventId: espnResult.id,
     });
-    applied++;
+    if (wasQueued) {
+      addAuditLog("espn_result_queued", {
+        gameIndex: matchingGame.game_index,
+        round: matchingGame.round,
+        team1: matchingGame.team1,
+        team2: matchingGame.team2,
+        winner,
+        espnResultId: espnResult.id,
+        score1: espnResult.score1,
+        score2: espnResult.score2,
+      });
+      queued++;
+    }
 
     results = getResults();
     gameDefinitions = buildCurrentGameDefinitions(results);
   }
 
   return {
-    applied,
+    queued,
     skipped,
     finalResultsSeen: dedupedResults.size,
   };
@@ -444,6 +460,7 @@ export interface ESPNScoreboard {
 
 interface ESPNEvent {
   id: string;
+  date: string;
   name: string;
   status?: { type?: { name: string } };
   competitions?: ESPNCompetition[];
@@ -463,6 +480,7 @@ interface ESPNCompetitor {
 
 export interface ESPNGameResult {
   id: string;
+  eventDate: string;
   team1: string;
   team2: string;
   winner: string;

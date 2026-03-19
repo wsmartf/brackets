@@ -47,6 +47,10 @@ export interface AnalysisResult {
   analyzedAt: string;
 }
 
+export interface RunAnalysisOptions {
+  newGameIndices?: number[];
+}
+
 // ============================================================
 // Main Analysis Function
 // ============================================================
@@ -60,7 +64,7 @@ export interface AnalysisResult {
  *
  * @returns Promise<AnalysisResult> with the aggregated stats
  */
-export async function runAnalysis(): Promise<AnalysisResult> {
+export async function runAnalysis(options: RunAnalysisOptions = {}): Promise<AnalysisResult> {
   initDb();
   const initialOrder = getInitialOrder();
   const matchupProbabilities = buildMatchupProbabilityTable();
@@ -85,6 +89,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
       remaining: stats.remaining,
       gamesCompleted: stats.gamesCompleted,
       championshipProbs: stats.championshipProbs,
+      newGameIndices: options.newGameIndices,
     });
     return stats;
   }
@@ -190,6 +195,7 @@ export async function runAnalysis(): Promise<AnalysisResult> {
     remaining: stats.remaining,
     gamesCompleted: stats.gamesCompleted,
     championshipProbs: stats.championshipProbs,
+    newGameIndices: options.newGameIndices,
   });
 
   return stats;

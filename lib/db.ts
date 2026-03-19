@@ -46,6 +46,8 @@ interface SnapshotRow {
   games_completed: number;
   championship_probs: string;
   game_results_hash: string;
+  completed_game_indices: string;
+  new_game_indices: string;
   created_at: string;
 }
 
@@ -55,6 +57,7 @@ export interface Snapshot {
   gamesCompleted: number;
   championshipProbs: Record<string, number>;
   gameResultsHash: string;
+  newGameIndices: number[];
   createdAt: string;
 }
 
@@ -62,6 +65,52 @@ export interface SnapshotInput {
   remaining: number;
   gamesCompleted: number;
   championshipProbs: Record<string, number>;
+  newGameIndices?: number[];
+}
+
+interface ResultEventRow {
+  id: number;
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+  winner: string;
+  source: string;
+  espn_event_id: string | null;
+  detected_at: string;
+  processed_at: string | null;
+}
+
+export interface ResultEvent {
+  id: number;
+  gameIndex: number;
+  round: number;
+  team1: string;
+  team2: string;
+  winner: string;
+  source: string;
+  espnEventId: string | null;
+  detectedAt: string;
+  processedAt: string | null;
+}
+
+export interface ResultEventInput {
+  gameIndex: number;
+  round: number;
+  team1: string;
+  team2: string;
+  winner: string;
+  source: string;
+  espnEventId?: string | null;
+}
+
+export interface EliminationImpact {
+  snapshotId: number;
+  gameIndex: number;
+  eliminated: number | null;
+  remainingAfter: number;
+  exact: boolean;
+  createdAt: string;
 }
 
 // ============================================================
@@ -110,12 +159,34 @@ function initSchema(db: Database.Database): void {
       games_completed INTEGER NOT NULL,
       championship_probs TEXT NOT NULL,
       game_results_hash TEXT NOT NULL,
+      completed_game_indices TEXT NOT NULL DEFAULT '[]',
+      new_game_indices TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS result_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_index INTEGER NOT NULL,
+      round INTEGER NOT NULL,
+      team1 TEXT NOT NULL,
+      team2 TEXT NOT NULL,
+      winner TEXT NOT NULL,
+      source TEXT NOT NULL,
+      espn_event_id TEXT,
+      detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+      processed_at TEXT
+    );
+
+    DROP INDEX IF EXISTS idx_result_events_game_winner;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_result_events_pending_game_winner
+    ON result_events (game_index, winner)
+    WHERE processed_at IS NULL;
   `);
 
   ensureColumn(db, "results", "source", "TEXT NOT NULL DEFAULT 'seed'");
   ensureColumn(db, "results", "manual_override", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "snapshots", "completed_game_indices", "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(db, "snapshots", "new_game_indices", "TEXT NOT NULL DEFAULT '[]'");
 }
 
 function ensureColumn(
@@ -315,22 +386,61 @@ function parseChampionshipProbs(raw: string): Record<string, number> {
   }
 }
 
+function parseIntegerArray(raw: string): number[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((value): value is number => Number.isInteger(value))
+      .sort((a, b) => a - b);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeGameIndices(gameIndices: number[]): number[] {
+  return [...new Set(gameIndices.filter((value) => Number.isInteger(value)))].sort(
+    (a, b) => a - b
+  );
+}
+
 export function createSnapshot(input: SnapshotInput): boolean {
   initDb();
   const db = getDb();
-  const gameResultsHash = buildGameResultsHash(getResults());
+  const results = getResults();
+  const completedGameIndices = normalizeGameIndices(
+    results.filter((result) => result.winner !== null).map((result) => result.game_index)
+  );
+  const completedGameIndexSet = new Set(completedGameIndices);
+  const gameResultsHash = buildGameResultsHash(results);
   const latestSnapshot = db
     .prepare(
-      `SELECT game_results_hash
+      `SELECT game_results_hash, completed_game_indices
        FROM snapshots
        ORDER BY created_at DESC, id DESC
        LIMIT 1`
     )
-    .get() as { game_results_hash: string } | undefined;
+    .get() as { game_results_hash: string; completed_game_indices: string } | undefined;
 
   if (latestSnapshot?.game_results_hash === gameResultsHash) {
     return false;
   }
+
+  const previousCompletedGameIndices = parseIntegerArray(
+    latestSnapshot?.completed_game_indices ?? "[]"
+  );
+  const previousCompletedGameIndexSet = new Set(previousCompletedGameIndices);
+  const inferredNewGameIndices = completedGameIndices.filter(
+    (gameIndex) => !previousCompletedGameIndexSet.has(gameIndex)
+  );
+  const newGameIndices = normalizeGameIndices(
+    (input.newGameIndices ?? inferredNewGameIndices).filter((gameIndex) =>
+      completedGameIndexSet.has(gameIndex)
+    )
+  );
 
   db.prepare(
     `INSERT INTO snapshots (
@@ -338,14 +448,18 @@ export function createSnapshot(input: SnapshotInput): boolean {
       games_completed,
       championship_probs,
       game_results_hash,
+      completed_game_indices,
+      new_game_indices,
       created_at
     )
-     VALUES (?, ?, ?, ?, datetime('now'))`
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
   ).run(
     input.remaining,
     input.gamesCompleted,
     JSON.stringify(input.championshipProbs),
-    gameResultsHash
+    gameResultsHash,
+    JSON.stringify(completedGameIndices),
+    JSON.stringify(newGameIndices)
   );
 
   return true;
@@ -356,7 +470,15 @@ export function getSnapshots(): Snapshot[] {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT id, remaining, games_completed, championship_probs, game_results_hash, created_at
+      `SELECT
+         id,
+         remaining,
+         games_completed,
+         championship_probs,
+         game_results_hash,
+         completed_game_indices,
+         new_game_indices,
+         created_at
        FROM snapshots
        ORDER BY created_at ASC, id ASC`
     )
@@ -368,6 +490,114 @@ export function getSnapshots(): Snapshot[] {
     gamesCompleted: row.games_completed,
     championshipProbs: parseChampionshipProbs(row.championship_probs),
     gameResultsHash: row.game_results_hash,
+    newGameIndices: parseIntegerArray(row.new_game_indices),
     createdAt: row.created_at,
   }));
+}
+
+function mapResultEvent(row: ResultEventRow): ResultEvent {
+  return {
+    id: row.id,
+    gameIndex: row.game_index,
+    round: row.round,
+    team1: row.team1,
+    team2: row.team2,
+    winner: row.winner,
+    source: row.source,
+    espnEventId: row.espn_event_id,
+    detectedAt: row.detected_at,
+    processedAt: row.processed_at,
+  };
+}
+
+export function enqueueResultEvent(input: ResultEventInput): boolean {
+  initDb();
+  const db = getDb();
+  const result = db.prepare(
+    `INSERT OR IGNORE INTO result_events (
+      game_index,
+      round,
+      team1,
+      team2,
+      winner,
+      source,
+      espn_event_id,
+      detected_at
+    )
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+  ).run(
+    input.gameIndex,
+    input.round,
+    input.team1,
+    input.team2,
+    input.winner,
+    input.source,
+    input.espnEventId ?? null
+  );
+
+  return result.changes > 0;
+}
+
+export function getPendingResultEvents(): ResultEvent[] {
+  initDb();
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT
+         id,
+         game_index,
+         round,
+         team1,
+         team2,
+         winner,
+         source,
+         espn_event_id,
+         detected_at,
+         processed_at
+       FROM result_events
+       WHERE processed_at IS NULL
+       ORDER BY detected_at ASC, id ASC`
+    )
+    .all() as ResultEventRow[];
+
+  return rows.map(mapResultEvent);
+}
+
+export function markResultEventProcessed(id: number): void {
+  initDb();
+  const db = getDb();
+  db.prepare(
+    `UPDATE result_events
+     SET processed_at = datetime('now')
+     WHERE id = ?`
+  ).run(id);
+}
+
+export function getEliminationImpact(): EliminationImpact[] {
+  const snapshots = getSnapshots();
+  const impacts: EliminationImpact[] = [];
+
+  for (let index = 0; index < snapshots.length; index++) {
+    const snapshot = snapshots[index];
+    if (snapshot.newGameIndices.length === 0) {
+      continue;
+    }
+
+    const previousSnapshot = index > 0 ? snapshots[index - 1] : null;
+    const exact = snapshot.newGameIndices.length === 1 && previousSnapshot !== null;
+    const eliminated = exact ? previousSnapshot.remaining - snapshot.remaining : null;
+
+    for (const gameIndex of snapshot.newGameIndices) {
+      impacts.push({
+        snapshotId: snapshot.id,
+        gameIndex,
+        eliminated,
+        remainingAfter: snapshot.remaining,
+        exact,
+        createdAt: snapshot.createdAt,
+      });
+    }
+  }
+
+  return impacts;
 }
