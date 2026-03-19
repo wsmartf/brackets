@@ -4,12 +4,11 @@
  * Shows a feed of completed games, each with:
  * - Team1 vs Team2 (round label)
  * - Winner name
- * - "X% of brackets eliminated" (if per-game impact data is available)
+ * - Elimination count if impact data is available
  *
  * Props:
  *   results: Array<{ game_index, round, team1, team2, winner, updated_at }>
- *
- * TODO: Add per-game impact percentage once analysis tracks this.
+ *   impacts?: EliminationImpact[] — per-game elimination counts from /api/snapshots
  */
 
 "use client";
@@ -23,56 +22,89 @@ interface GameResult {
   updated_at: string;
 }
 
+export interface EliminationImpact {
+  snapshotId: number;
+  gameIndex: number;
+  eliminated: number | null;
+  remainingAfter: number;
+  exact: boolean;
+  createdAt: string;
+}
+
 interface GameFeedProps {
   results: GameResult[];
+  impacts?: EliminationImpact[];
 }
 
 const ROUND_LABELS: Record<number, string> = {
-  64: "Round of 64",
-  32: "Round of 32",
-  16: "Sweet 16",
-  8: "Elite 8",
-  4: "Final Four",
+  64: "R64",
+  32: "R32",
+  16: "S16",
+  8: "E8",
+  4: "F4",
   2: "Championship",
 };
 
-export default function GameFeed({ results }: GameFeedProps) {
+export default function GameFeed({ results, impacts }: GameFeedProps) {
   const completed = results
     .filter((r) => r.winner)
     .sort((a, b) => {
-      // Sort by most recent first
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
 
+  const impactByGame = new Map<number, EliminationImpact>();
+  if (impacts) {
+    for (const impact of impacts) {
+      if (impact.gameIndex != null) {
+        impactByGame.set(impact.gameIndex, impact);
+      }
+    }
+  }
+
   if (completed.length === 0) {
     return (
-      <div className="text-gray-500 text-sm italic">
+      <div className="text-white/40 text-sm italic">
         No results yet. The tournament starts Thursday, March 19.
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm uppercase tracking-wide text-gray-500 mb-3">
-        Results
+    <div className="space-y-1.5">
+      <h3 className="text-base font-semibold text-white mb-4">
+        Game results
       </h3>
-      {completed.map((r) => (
-        <div
-          key={r.game_index}
-          className="flex items-center justify-between py-2 px-3 bg-gray-800 rounded text-sm"
-        >
-          <div className="flex-1">
-            <span className="text-gray-300">
-              {r.team1} vs {r.team2}
-            </span>
-            <span className="text-gray-600 ml-2 text-xs">
-              {ROUND_LABELS[r.round] ?? `Round ${r.round}`}
-            </span>
+      {completed.map((r) => {
+        const impact = impactByGame.get(r.game_index);
+        const loser = r.winner === r.team1 ? r.team2 : r.team1;
+        return (
+          <div
+            key={r.game_index}
+            className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-white/8 bg-white/5 text-sm"
+          >
+            <div className="flex-1 min-w-0">
+              <span className="text-white/80 font-medium">{r.winner}</span>
+              <span className="text-white/30 mx-1.5">over</span>
+              <span className="text-white/50">{loser}</span>
+              <span className="text-white/20 ml-2 text-xs">
+                {ROUND_LABELS[r.round] ?? `R${r.round}`}
+              </span>
+            </div>
+            {impact && impact.eliminated != null && (
+              <span
+                className={`ml-3 text-xs tabular-nums font-medium shrink-0 ${
+                  impact.exact
+                    ? "text-rose-400"
+                    : "text-amber-400"
+                }`}
+              >
+                {impact.exact ? "" : "~"}
+                {impact.eliminated.toLocaleString()} eliminated
+              </span>
+            )}
           </div>
-          <span className="text-green-400 font-medium">{r.winner}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

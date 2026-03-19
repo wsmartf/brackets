@@ -1,17 +1,19 @@
 /**
- * Main dashboard page.
+ * Homepage — editorial redesign.
  *
- * Fetches stats and results on load, renders the dashboard components.
- * "Refresh" starts a background analysis and the dashboard polls for completion.
+ * Fetches stats, results, and snapshots. Polls for analysis updates.
+ * Renders the hero, stats strip, two-column section, bracket browser,
+ * game feed, and admin strip.
  */
 
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
-import Dashboard from "@/components/Dashboard";
 import ProbabilityBars from "@/components/ProbabilityBars";
-import GameFeed from "@/components/GameFeed";
+import GameFeed, { EliminationImpact } from "@/components/GameFeed";
+import KillerLeaderboard from "@/components/KillerLeaderboard";
+import SiteNav from "@/components/SiteNav";
 
 interface Stats {
   remaining: number;
@@ -45,8 +47,16 @@ export default function Home() {
     analyzedAt: null,
   });
   const [results, setResults] = useState<GameResult[]>([]);
+  const [impacts, setImpacts] = useState<EliminationImpact[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const previousIsRunningRef = useRef(false);
+
+  // Stable random ID — initialized to 0 on SSR, set after mount to avoid hydration mismatch
+  const [randomId, setRandomId] = useState(0);
+  useEffect(() => {
+    setRandomId(Math.floor(Math.random() * 1_000_000_000));
+  }, []);
+  const [bracketInput, setBracketInput] = useState("");
 
   const fetchStats = useCallback(async () => {
     try {
@@ -68,17 +78,29 @@ export default function Home() {
     }
   }, []);
 
+  const fetchSnapshots = useCallback(async () => {
+    try {
+      const res = await fetch("/api/snapshots");
+      const data = await res.json();
+      if (data.eliminationImpact) {
+        setImpacts(data.eliminationImpact);
+      }
+    } catch (err) {
+      console.error("Failed to fetch snapshots:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchStats();
     fetchResults();
-  }, [fetchStats, fetchResults]);
+    fetchSnapshots();
+  }, [fetchStats, fetchResults, fetchSnapshots]);
 
   useEffect(() => {
     const intervalMs = stats.analysisStatus?.isRunning ? 3000 : 15000;
     const intervalId = window.setInterval(() => {
       void fetchStats();
     }, intervalMs);
-
     return () => {
       window.clearInterval(intervalId);
     };
@@ -88,9 +110,10 @@ export default function Home() {
     const isRunning = stats.analysisStatus?.isRunning ?? false;
     if (previousIsRunningRef.current && !isRunning) {
       void fetchResults();
+      void fetchSnapshots();
     }
     previousIsRunningRef.current = isRunning;
-  }, [fetchResults, stats.analysisStatus?.isRunning]);
+  }, [fetchResults, fetchSnapshots, stats.analysisStatus?.isRunning]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -118,45 +141,231 @@ export default function Home() {
     }
   };
 
+  const isAnalysisRunning = stats.analysisStatus?.isRunning ?? false;
+  const gamesStarted = stats.gamesCompleted > 0;
+  const hasData =
+    Object.keys(stats.championshipProbs ?? {}).length > 0 || impacts.length > 0;
+
+  // Most recent exact elimination impact for the delta line
+  const exactImpacts = impacts.filter(
+    (i) => i.exact && i.eliminated != null && i.gameIndex != null
+  );
+  const latestImpact =
+    exactImpacts.length > 0
+      ? exactImpacts[exactImpacts.length - 1]
+      : null;
+  const latestGame = latestImpact
+    ? results.find((r) => r.game_index === latestImpact.gameIndex)
+    : null;
+
+  // Stats strip numbers
+  const eliminated = stats.totalBrackets - stats.remaining;
+  const biggestKill =
+    exactImpacts.length > 0
+      ? Math.max(...exactImpacts.map((i) => i.eliminated ?? 0))
+      : null;
+
+  const bracketTarget =
+    bracketInput.trim() !== "" ? bracketInput.trim() : String(randomId);
+
   return (
-    <main className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        <div className="space-y-4">
-          <div className="flex items-center justify-center gap-3 text-sm">
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white">
-              Dashboard
-            </span>
+    <div className="home-shell min-h-screen text-white">
+      <SiteNav activePage="home" />
+
+      {/* Hero */}
+      <section className="home-hero px-6 pt-14 sm:pt-20 pb-10">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-6">
+            I generated 1 billion March Madness brackets.
+          </p>
+
+          <h1 className="text-7xl sm:text-8xl lg:text-[9rem] font-bold tabular-nums leading-none text-white">
+            {stats.remaining.toLocaleString()}
+          </h1>
+
+          <p className="text-xl sm:text-2xl text-white/60 mt-4 font-medium">
+            {gamesStarted
+              ? "still perfect"
+              : "brackets generated, waiting for tip-off"}
+          </p>
+
+          {latestImpact && latestGame && latestGame.winner && (
+            <p className="mt-4 text-rose-400 text-base sm:text-lg font-medium">
+              {latestGame.winner} over{" "}
+              {latestGame.winner === latestGame.team1
+                ? latestGame.team2
+                : latestGame.team1}{" "}
+              just eliminated{" "}
+              {(latestImpact.eliminated ?? 0).toLocaleString()} brackets.
+            </p>
+          )}
+
+          <p className="mt-4 text-white/30 text-sm italic">
+            The perfect bracket is in here somewhere. Probably.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/bracket/418275901"
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+              href={`/bracket/${randomId}`}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white text-black px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
             >
-              Live Bracket Status
+              Explore a bracket →
             </Link>
             <Link
               href="/about"
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-transparent text-white px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/8"
             >
-              About the Model
+              How it works →
             </Link>
           </div>
-          <h1 className="text-2xl font-bold text-center">
-            March Madness 2026
-          </h1>
-          <p className="text-center text-gray-400 text-sm">
-            Tracking 1 billion generated brackets against reality
-          </p>
         </div>
+      </section>
 
-        <Dashboard
-          stats={stats}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
-        />
+      {/* Stats strip — only if games have started */}
+      {gamesStarted && (
+        <section className="px-6 py-8 border-t border-white/8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-wrap items-center divide-x divide-white/10">
+              <div className="flex-1 min-w-[140px] px-6 first:pl-0 py-2 text-center">
+                <p className="text-3xl sm:text-4xl font-bold tabular-nums text-white">
+                  {stats.gamesCompleted}{" "}
+                  <span className="text-white/30 text-2xl">/ 63</span>
+                </p>
+                <p className="text-xs text-white/40 mt-1 uppercase tracking-wide">
+                  games complete
+                </p>
+              </div>
+              <div className="flex-1 min-w-[140px] px-6 py-2 text-center">
+                <p className="text-3xl sm:text-4xl font-bold tabular-nums text-rose-400">
+                  {eliminated.toLocaleString()}
+                </p>
+                <p className="text-xs text-white/40 mt-1 uppercase tracking-wide">
+                  brackets eliminated
+                </p>
+              </div>
+              {biggestKill != null && (
+                <div className="flex-1 min-w-[140px] px-6 py-2 text-center">
+                  <p className="text-3xl sm:text-4xl font-bold tabular-nums text-white">
+                    {biggestKill.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1 uppercase tracking-wide">
+                    most from one game
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
-        <ProbabilityBars probs={stats.championshipProbs ?? {}} />
+      {/* Two-column section — only if data exists */}
+      {hasData && (
+        <section className="px-6 py-12">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
+            {/* Championship probs */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <ProbabilityBars
+                probs={stats.championshipProbs ?? {}}
+                remaining={stats.remaining}
+              />
+            </div>
 
-        <GameFeed results={results} />
-      </div>
-    </main>
+            {/* Killer leaderboard */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <KillerLeaderboard impacts={impacts} results={results} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Bracket browser */}
+      <section className="px-6 py-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+            <p className="text-xs uppercase tracking-[0.15em] text-white/40 mb-2">
+              Browse the universe
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">
+              Every integer 0–999,999,999 is a bracket.
+            </h2>
+            <p className="text-white/50 mt-2 text-sm">
+              Pick a number. It always generates the same picks.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3 items-center">
+              <div className="flex items-center rounded-xl border border-white/15 bg-white/8 overflow-hidden">
+                <span className="px-4 py-3 text-sm text-white/40 border-r border-white/10 shrink-0">
+                  Bracket #
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  max={999_999_999}
+                  value={bracketInput}
+                  onChange={(e) => setBracketInput(e.target.value)}
+                  placeholder={randomId.toLocaleString()}
+                  className="bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none w-40"
+                />
+              </div>
+              <Link
+                href={`/bracket/${bracketTarget}`}
+                className="rounded-xl bg-white text-black px-5 py-3 text-sm font-semibold transition-opacity hover:opacity-90"
+              >
+                View →
+              </Link>
+              <Link
+                href={`/bracket/${randomId}`}
+                className="text-sm text-white/40 hover:text-white/70 transition-colors"
+              >
+                Try #{randomId.toLocaleString()}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Game feed — only when results exist */}
+      {results.some((r) => r.winner) && (
+        <section className="px-6 pb-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <GameFeed results={results} impacts={impacts} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Refresh / admin strip */}
+      <footer className="border-t border-white/8 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-white/30">
+          <div className="space-y-0.5">
+            {isAnalysisRunning && stats.analysisStatus?.lastStartedAt && (
+              <p className="text-amber-400/80">
+                Analysis running since{" "}
+                {new Date(stats.analysisStatus.lastStartedAt).toLocaleTimeString()}
+              </p>
+            )}
+            {stats.analyzedAt && (
+              <p>
+                Last updated:{" "}
+                {new Date(stats.analyzedAt).toLocaleString()}
+              </p>
+            )}
+            {stats.analysisStatus?.lastError && (
+              <p className="text-rose-400/70">
+                Last refresh failed: {stats.analysisStatus.lastError}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || isAnalysisRunning}
+            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white/80 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isRefreshing || isAnalysisRunning ? "Analyzing…" : "Refresh analysis"}
+          </button>
+        </div>
+      </footer>
+    </div>
   );
 }

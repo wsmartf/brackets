@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { BracketPickStatus, EliminatedByPick } from "@/lib/tournament";
+import SiteNav from "@/components/SiteNav";
 
 const ROUND_OPTIONS = [
   { value: 64, label: "Round of 64" },
@@ -48,7 +49,7 @@ function statusLabel(result: BracketPickStatus["result"]): string {
     case "dead":
       return "Wrong";
     default:
-      return "Pending";
+      return "TBD";
   }
 }
 
@@ -114,48 +115,23 @@ export default function BracketViewer({
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f4ee_0%,#efe8db_100%)] text-stone-950">
+      <SiteNav activePage="bracket" />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <header className="rounded-[2rem] border border-black/8 bg-white/80 px-5 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:px-7 sm:py-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/"
-                className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-stone-700 transition hover:bg-white"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/about"
-                className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-stone-700 transition hover:bg-white"
-              >
-                About
-              </Link>
-              <span className="rounded-full border border-black/8 bg-stone-950 px-4 py-2 text-white">
-                Live Bracket Status
-              </span>
-            </div>
-            <p className="text-xs uppercase tracking-[0.22em] text-stone-500">
-              One number, one bracket
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          <div className="mt-0 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-500">
-                Live Bracket Status
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
+              <h1 className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
                 Bracket <span className="font-mono">#{formatBracketId(id)}</span>
               </h1>
-              <div className="mt-5 flex flex-wrap items-stretch gap-3">
+              <div className="mt-4 flex flex-wrap items-stretch gap-3">
                 <span
-                  className={`inline-flex items-center rounded-[1.1rem] border px-5 py-3 text-lg font-black uppercase tracking-[0.24em] shadow-sm sm:text-xl ${
+                  className={`inline-flex items-center rounded-[1.1rem] border px-6 py-3 text-2xl font-black uppercase tracking-[0.18em] shadow-sm ${
                     alive
                       ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-700"
                       : "border-rose-500/25 bg-rose-500/12 text-rose-700"
                   }`}
                 >
-                  {alive ? "Alive" : "Dead"}
+                  {alive ? "Alive" : "Eliminated"}
                 </span>
                 {championPick ? (
                   <span className="rounded-[1.1rem] border border-black/10 bg-stone-100 px-5 py-3 text-stone-700 shadow-sm">
@@ -169,7 +145,7 @@ export default function BracketViewer({
                 ) : null}
               </div>
               <p className="mt-4 text-base leading-7 text-stone-700">
-                {summary.correct} correct • {summary.wrong} wrong • {summary.pending} pending
+                {summary.correct} correct · {summary.wrong} wrong · {summary.pending} pending
               </p>
               {eliminatedBy ? (
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-rose-700">
@@ -276,53 +252,36 @@ export default function BracketViewer({
             })}
           </div>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 divide-y divide-black/6 rounded-[1.4rem] border border-black/8 bg-stone-50 px-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
             {visiblePicks.map((pick) => (
-              <article
+              <div
                 key={pick.game_index}
-                className="rounded-[1.4rem] border border-black/8 bg-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]"
+                className="flex items-center justify-between py-2.5 text-sm last:border-0"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
-                      Game {pick.game_index}
-                    </p>
-                    <h3 className="mt-2 text-lg font-semibold text-stone-950">
-                      {pick.team1} vs {pick.team2}
-                    </h3>
-                  </div>
+                <div className="flex-1 min-w-0 pr-4">
+                  <span className="text-stone-700">{pick.team1}</span>
+                  <span className="text-stone-400 mx-2">vs</span>
+                  <span className="text-stone-700">{pick.team2}</span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {pick.result === "dead" && pick.winner ? (
+                    <span className="text-stone-500 text-xs">
+                      Picked{" "}
+                      <span className="text-stone-700 font-medium">{pick.pick}</span>
+                      {" · "}
+                      <span className="text-stone-950 font-medium">{pick.winner}</span>
+                      {" "}won
+                    </span>
+                  ) : (
+                    <span className="text-stone-950 font-medium">{pick.pick}</span>
+                  )}
                   <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${statusClasses(
-                      pick.result
-                    )}`}
+                    className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusClasses(pick.result)}`}
                   >
                     {statusLabel(pick.result)}
                   </span>
                 </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
-                  <div className="rounded-2xl border border-black/8 bg-white px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-stone-500">
-                      Picked
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold tracking-tight text-stone-950">
-                      {pick.pick}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-black/8 bg-stone-100 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-stone-500">
-                      Actual winner
-                    </p>
-                    <p
-                      className={`mt-2 text-lg font-semibold tracking-tight ${
-                        pick.winner ? "text-stone-950" : "text-stone-500"
-                      }`}
-                    >
-                      {pick.winner ?? "Not decided yet"}
-                    </p>
-                  </div>
-                </div>
-              </article>
+              </div>
             ))}
           </div>
         </section>
