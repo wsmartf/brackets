@@ -259,6 +259,11 @@ function standardize(feature: keyof typeof v2Model.standardization, value: numbe
  * The model was trained offline on historical NCAA tournament games using
  * matchup feature differences. Production uses the exported coefficients and
  * standardization constants directly.
+ *
+ * Temperature scaling (T=1.8) is applied to the linear score before the logistic
+ * to reduce over-confidence when probabilities compound across tournament rounds.
+ * Per-game calibration is good at T=1.0; champion distribution matches published
+ * analytics forecasts (Torvik, Silver Bulletin) at T=1.8.
  */
 export function computeProbability(teamA: Team, teamB: Team): number {
   const linear =
@@ -279,7 +284,7 @@ export function computeProbability(teamA: Team, teamB: Team): number {
     v2Model.weights.seedNumDiff *
       standardize("seedNumDiff", teamA.seed - teamB.seed);
 
-  return logistic(linear);
+  return logistic(linear / v2Model.temperature);
 }
 
 /**

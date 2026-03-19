@@ -9,6 +9,7 @@
     "scheduleNetRatingDiff",
     "seedNumDiff"
   ],
+  "temperature": 1.8,
   "bias": -0.096301,
   "weights": {
     "netRatingDiff": 1.042569,
