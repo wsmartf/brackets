@@ -326,9 +326,13 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
       continue;
     }
 
-    applyPlayInWinnerIfNeeded(team1, team2, winner);
+    const playInHandling = applyPlayInWinnerIfNeeded(team1, team2, winner);
     results = getResults();
     gameDefinitions = buildCurrentGameDefinitions(results);
+
+    if (playInHandling.handled) {
+      continue;
+    }
 
     const matchingGame = gameDefinitions.find(
       (game) =>
@@ -420,19 +424,42 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
   };
 }
 
-function applyPlayInWinnerIfNeeded(team1: string, team2: string, winner: string): void {
+function applyPlayInWinnerIfNeeded(
+  team1: string,
+  team2: string,
+  winner: string
+): { handled: boolean } {
   const slot = PLAY_IN_SLOTS.find((candidateSlot) => {
     const candidateNames = new Set(candidateSlot.candidates.map((candidate) => candidate.name));
     return candidateNames.has(team1) && candidateNames.has(team2);
   });
 
   if (!slot) {
-    return;
+    return { handled: false };
   }
 
   const winningTeam = slot.candidates.find((candidate) => candidate.name === winner);
   if (!winningTeam) {
-    return;
+    return { handled: false };
+  }
+
+  if (winner === slot.placeholder) {
+    return { handled: true };
+  }
+
+  const currentRoundOf64Result = getResults().find(
+    (result) => result.game_index === slot.roundOf64GameIndex
+  );
+
+  if (
+    currentRoundOf64Result?.round === 64 &&
+    currentRoundOf64Result.team1 === slot.roundOf64Team1 &&
+    currentRoundOf64Result.team2 === winningTeam.name &&
+    currentRoundOf64Result.winner === null &&
+    currentRoundOf64Result.source === "play_in" &&
+    currentRoundOf64Result.manual_override === 0
+  ) {
+    return { handled: true };
   }
 
   addAuditLog("play_in_result_seen", {
@@ -441,10 +468,6 @@ function applyPlayInWinnerIfNeeded(team1: string, team2: string, winner: string)
     team2,
     winner,
   });
-
-  if (winner === slot.placeholder) {
-    return;
-  }
 
   setResult(slot.roundOf64GameIndex, 64, slot.roundOf64Team1, winningTeam.name, null, {
     source: "play_in",
@@ -456,6 +479,8 @@ function applyPlayInWinnerIfNeeded(team1: string, team2: string, winner: string)
     replacement: winningTeam.name,
     roundOf64GameIndex: slot.roundOf64GameIndex,
   });
+
+  return { handled: true };
 }
 
 // ============================================================
