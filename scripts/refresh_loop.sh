@@ -47,6 +47,9 @@ while true; do
   RESPONSE_FILE=""
 
   case "$HTTP_STATUS" in
+    200)
+      echo "[$(timestamp)] refresh noop: no new results"
+      ;;
     202)
       echo "[$(timestamp)] refresh accepted"
       ;;

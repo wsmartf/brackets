@@ -466,6 +466,25 @@ export function createSnapshot(input: SnapshotInput): boolean {
   return true;
 }
 
+export function hasCurrentResultsSnapshot(): boolean {
+  initDb();
+  const db = getDb();
+  const latestSnapshot = db
+    .prepare(
+      `SELECT game_results_hash
+       FROM snapshots
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`
+    )
+    .get() as { game_results_hash: string } | undefined;
+
+  if (!latestSnapshot) {
+    return false;
+  }
+
+  return latestSnapshot.game_results_hash === buildGameResultsHash(getResults());
+}
+
 export function getSnapshots(): Snapshot[] {
   initDb();
   const db = getDb();

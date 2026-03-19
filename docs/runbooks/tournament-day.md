@@ -39,9 +39,11 @@ export REFRESH_INTERVAL_SECONDS=60
 make refresh-loop
 ```
 
-  The loop calls `POST /api/refresh` every 60 seconds. If the previous analysis
-  is still running, the API returns `409` and the loop simply tries again on the
-  next interval.
+  The loop calls `POST /api/refresh` every 60 seconds.
+  - `200` means ESPN found nothing new and cached analysis was already current.
+  - `202` means new work was accepted and analysis started.
+  - `409` means the previous analysis is still running, so the loop simply tries
+    again on the next interval.
 
 - Optional `pm2` version of the same loop:
 
@@ -67,9 +69,10 @@ curl -X POST "$ADMIN_BASE_URL/api/refresh" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-  `POST /api/refresh` returns immediately with `202 Accepted`. Poll `GET /api/stats`
-  and wait for `analysisStatus.isRunning` to become `false` before treating the
-  refresh as complete.
+  `POST /api/refresh` returns `200` when nothing changed and `202 Accepted` when
+  analysis actually starts. If you get `202`, poll `GET /api/stats` and wait for
+  `analysisStatus.isRunning` to become `false` before treating the refresh as
+  complete.
 
 - If ESPN is failing, refresh without ESPN:
 

@@ -9,10 +9,12 @@
  * Query params:
  *   ?espn=false — skip ESPN fetch first (default: ESPN fetch runs)
  *
- * Response: `202 Accepted` with the current analysis status.
+ * Responses:
+ *   `200 OK` if no new results were found and cached analysis is already current
+ *   `202 Accepted` with the current analysis status when analysis work starts
  *
- * This route starts the work and returns immediately. Clients should poll
- * GET /api/stats for completion and updated cached stats.
+ * When analysis work starts, clients should poll GET /api/stats for completion
+ * and updated cached stats.
  */
 
 import { NextResponse } from "next/server";
@@ -25,6 +27,7 @@ import {
 } from "@/lib/analysis-status";
 import {
   addAuditLog,
+  hasCurrentResultsSnapshot,
   getPendingResultEvents,
   markResultEventProcessed,
   setResult,
@@ -64,21 +67,15 @@ async function processPendingResultEvents() {
   return { processed, lastStats };
 }
 
-async function runRefresh(useEspn: boolean): Promise<void> {
+async function runRefresh(espnSummary: {
+  queued: number;
+  skipped: number;
+  finalResultsSeen: number;
+  error?: string;
+} | null): Promise<void> {
   try {
-    let espnSummary = null;
     let lastStats: Awaited<ReturnType<typeof runAnalysis>> | null = null;
     let processedResultEvents = 0;
-
-    if (useEspn) {
-      try {
-        espnSummary = await fetchAndQueueEspnResults();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        addAuditLog("espn_fetch_failed", { error: message });
-        espnSummary = { queued: 0, skipped: 0, finalResultsSeen: 0, error: message };
-      }
-    }
 
     const processingSummary = await processPendingResultEvents();
     processedResultEvents = processingSummary.processed;
@@ -113,6 +110,66 @@ export async function POST(request: Request) {
     return authError;
   }
 
+  if (getAnalysisStatus().isRunning) {
+    return NextResponse.json(
+      {
+        error: "Analysis is already running",
+        analysisStatus: getAnalysisStatus(),
+      },
+      { status: 409 }
+    );
+  }
+
+  const url = new URL(request.url);
+  const useEspn = url.searchParams.get("espn") !== "false";
+  let espnSummary: {
+    queued: number;
+    skipped: number;
+    finalResultsSeen: number;
+    error?: string;
+  } | null = null;
+
+  if (useEspn) {
+    try {
+      espnSummary = await fetchAndQueueEspnResults();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      addAuditLog("espn_fetch_failed", { error: message });
+      espnSummary = { queued: 0, skipped: 0, finalResultsSeen: 0, error: message };
+    }
+  }
+
+  const hasPendingResultEvents = getPendingResultEvents().length > 0;
+  const needsAnalysis = hasPendingResultEvents || !hasCurrentResultsSnapshot();
+
+  if (espnSummary?.error && !needsAnalysis) {
+    return NextResponse.json(
+      {
+        error: espnSummary.error,
+        analysisStatus: getAnalysisStatus(),
+        espnSummary,
+      },
+      { status: 502 }
+    );
+  }
+
+  if (!needsAnalysis) {
+    addAuditLog("refresh_noop", {
+      triggerSource: "manual",
+      espnSummary,
+    });
+
+    return NextResponse.json(
+      {
+        ok: true,
+        skipped: true,
+        analysisStatus: getAnalysisStatus(),
+        espnSummary,
+      },
+      { status: 200 }
+    );
+  }
+
   if (!startAnalysisRun("manual")) {
     return NextResponse.json(
       {
@@ -123,12 +180,12 @@ export async function POST(request: Request) {
     );
   }
 
-  addAuditLog("refresh_started", { triggerSource: "manual" });
+  addAuditLog("refresh_started", {
+    triggerSource: "manual",
+    espnSummary,
+  });
 
-  const url = new URL(request.url);
-  const useEspn = url.searchParams.get("espn") !== "false";
-
-  void runRefresh(useEspn);
+  void runRefresh(espnSummary);
 
   return NextResponse.json(
     {

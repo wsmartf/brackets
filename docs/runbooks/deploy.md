@@ -175,7 +175,10 @@ curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
 curl "$ADMIN_BASE_URL/api/stats"
 ```
 
-`POST /api/refresh` now returns immediately with `202 Accepted`. Use `GET /api/stats` to watch `analysisStatus.isRunning` and wait for it to become `false` before trusting the updated cached stats.
+`POST /api/refresh` returns `200` when nothing changed and cached analysis is
+already current. It returns `202 Accepted` only when analysis actually starts.
+After a `202`, use `GET /api/stats` to watch `analysisStatus.isRunning` and wait
+for it to become `false` before trusting the updated cached stats.
 
 ## If Something Goes Wrong
 - If ESPN fetch is failing or slow, use `POST /api/refresh?espn=false`.
