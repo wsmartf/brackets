@@ -127,6 +127,12 @@ export default function Home() {
               Dashboard
             </span>
             <Link
+              href="/bracket/418275901"
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              Live Bracket Status
+            </Link>
+            <Link
               href="/about"
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
             >
