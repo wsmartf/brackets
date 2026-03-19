@@ -14,6 +14,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import Database from "better-sqlite3";
 import v2Model from "@/data/model-v2.json";
+import { mulberry32 } from "./prng";
 
 // ============================================================
 // Types
@@ -56,6 +57,43 @@ export interface GameResultLike {
   team1: string;
   team2: string;
   winner: string | null;
+}
+
+export interface BracketPick {
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+  pick: string;
+}
+
+export type BracketPickResult = "alive" | "dead" | "pending";
+
+export interface BracketPickStatus extends BracketPick {
+  winner: string | null;
+  result: BracketPickResult;
+}
+
+export interface BracketSummary {
+  correct: number;
+  wrong: number;
+  pending: number;
+}
+
+export interface EliminatedByPick {
+  game_index: number;
+  round: number;
+  team1: string;
+  team2: string;
+  pick: string;
+  winner: string;
+}
+
+export interface BracketSurvivalState {
+  picks: BracketPickStatus[];
+  alive: boolean;
+  summary: BracketSummary;
+  eliminated_by: EliminatedByPick | null;
 }
 
 // ============================================================
@@ -282,6 +320,118 @@ export function buildMatchupProbabilityTable(): number[] {
 
   _cachedMatchupProbabilityTable = table;
   return table;
+}
+
+/**
+ * Reconstruct a single deterministic bracket from its index.
+ *
+ * This replays the same round-by-round matchup path the worker uses, so
+ * later-round probabilities depend on the winners already chosen earlier
+ * in this specific bracket.
+ */
+export function reconstructBracket(index: number): BracketPick[] {
+  const initialOrder = getInitialOrder();
+  const matchupProbabilities = buildMatchupProbabilityTable();
+  const rng = mulberry32(index);
+  const picks: BracketPick[] = [];
+
+  let currentRound = Array.from({ length: initialOrder.length }, (_, teamIndex) => teamIndex);
+  let gameIndex = 0;
+  let round = 64;
+
+  while (currentRound.length > 1) {
+    const nextRound: number[] = [];
+
+    for (let i = 0; i < currentRound.length; i += 2) {
+      const team1Index = currentRound[i];
+      const team2Index = currentRound[i + 1];
+      const team1 = initialOrder[team1Index];
+      const team2 = initialOrder[team2Index];
+      const probability = matchupProbabilities[team1Index * initialOrder.length + team2Index];
+      const pickTeam2 = rng() >= probability;
+      const winnerIndex = pickTeam2 ? team2Index : team1Index;
+
+      picks.push({
+        game_index: gameIndex,
+        round,
+        team1,
+        team2,
+        pick: initialOrder[winnerIndex],
+      });
+
+      nextRound.push(winnerIndex);
+      gameIndex++;
+    }
+
+    currentRound = nextRound;
+    round /= 2;
+  }
+
+  return picks;
+}
+
+export function getBracketSurvivalState(
+  picks: BracketPick[],
+  knownResults: GameResultLike[]
+): BracketSurvivalState {
+  const winnersByGame = new Map(
+    knownResults
+      .filter((result) => result.winner)
+      .map((result) => [result.game_index, result.winner as string])
+  );
+
+  let alive = true;
+  let eliminatedBy: EliminatedByPick | null = null;
+  const summary: BracketSummary = { correct: 0, wrong: 0, pending: 0 };
+
+  const annotatedPicks = picks.map((pick) => {
+    const winner = winnersByGame.get(pick.game_index) ?? null;
+
+    if (!winner) {
+      summary.pending++;
+      return {
+        ...pick,
+        winner: null,
+        result: "pending" as const,
+      };
+    }
+
+    if (pick.pick === winner) {
+      summary.correct++;
+      return {
+        ...pick,
+        winner,
+        result: "alive" as const,
+      };
+    }
+
+    summary.wrong++;
+    alive = false;
+
+    if (!eliminatedBy) {
+      eliminatedBy = {
+        game_index: pick.game_index,
+        round: pick.round,
+        team1: pick.team1,
+        team2: pick.team2,
+        pick: pick.pick,
+        winner,
+      };
+    }
+
+    return {
+      ...pick,
+      winner,
+      result: "dead" as const,
+    };
+  });
+
+  return {
+    picks: annotatedPicks,
+    alive,
+    summary,
+    eliminated_by: eliminatedBy,
+  };
 }
 
 function readPlayInRowOverrides(): Record<string, Team> {
