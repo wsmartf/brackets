@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs verify replay-stub replay-smoke refresh-loop
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
 
 install:
 	npm install
@@ -54,3 +54,21 @@ replay-smoke:
 
 refresh-loop:
 	bash scripts/refresh_loop.sh
+
+ops-status:
+	bash scripts/admin.sh status
+
+ops-refresh:
+	bash scripts/admin.sh refresh
+
+ops-refresh-no-espn:
+	bash scripts/admin.sh refresh-no-espn
+
+ops-audit:
+	bash scripts/admin.sh audit "$(LIMIT)"
+
+ops-result:
+	bash scripts/admin.sh result "$(ACTION)" "$(GAME)" "$(ROUND)" "$(TEAM1)" "$(TEAM2)" "$(WINNER)"
+
+ops-db:
+	bash scripts/db.sh summary

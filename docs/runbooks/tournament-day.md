@@ -10,17 +10,14 @@
 export ADMIN_BASE_URL='https://brackets.willjsmart.com'
 export ADMIN_TOKEN='replace-me'
 
-curl -X POST "$ADMIN_BASE_URL/api/refresh" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-curl "$ADMIN_BASE_URL/api/stats"
+make ops-refresh
+make ops-status
 ```
 
 5. Check the audit log:
 
 ```bash
-curl "$ADMIN_BASE_URL/api/audit?limit=20" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-audit
 ```
 
 ## During The Tournament
@@ -65,60 +62,46 @@ pm2 delete march-madness-refresh
 - Use normal refresh:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/refresh" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-refresh
 ```
 
   `POST /api/refresh` returns `200` when nothing changed and `202 Accepted` when
-  analysis actually starts. If you get `202`, poll `GET /api/stats` and wait for
-  `analysisStatus.isRunning` to become `false` before treating the refresh as
-  complete.
+  analysis actually starts. Use `make ops-status` to check whether
+  `analysisStatus.isRunning` has returned to `false` before treating the
+  refresh as complete.
 
 - If ESPN is failing, refresh without ESPN:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-curl "$ADMIN_BASE_URL/api/stats"
+make ops-refresh-no-espn
+make ops-status
 ```
 
 - Manually set a result if needed:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/results" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":"Duke"}'
+make ops-result ACTION=set GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena' WINNER='Duke'
 ```
 
   After any manual result write, immediately run a no-ESPN refresh and wait for
   it to finish before trusting the homepage:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-curl "$ADMIN_BASE_URL/api/stats"
-curl "$ADMIN_BASE_URL/api/results"
-curl "$ADMIN_BASE_URL/api/audit?limit=20" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-refresh-no-espn
+make ops-status
+make ops-audit
 ```
 
 - Clear a bad manual result:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/results" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":null}'
+make ops-result ACTION=clear GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena'
 ```
 
   Clearing a result has the same follow-up requirement:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-refresh-no-espn
 ```
 
 ## Quick Health Checks
@@ -131,8 +114,9 @@ curl https://brackets.willjsmart.com/api/stats
 Admin:
 
 ```bash
-curl "$ADMIN_BASE_URL/api/audit?limit=20" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-status
+make ops-audit
+make ops-db
 ```
 
 Local host checks:
@@ -141,6 +125,10 @@ Local host checks:
 pm2 status
 pm2 logs march-madness --lines 100
 ```
+
+Raw `curl` and SQLite commands still work and remain useful for debugging the
+wrappers themselves. The shortcuts above are only there to reduce repetitive
+typing during live ops.
 
 ## Stuck Analysis Recovery
 If the homepage shows `recomputing against the latest results...` for a long time

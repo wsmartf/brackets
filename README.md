@@ -21,6 +21,12 @@ make analyze-smoke
 make collision-stats
 make backtest-current-model
 make train-v2-model
+make ops-status
+make ops-refresh
+make ops-refresh-no-espn
+make ops-audit
+make ops-result
+make ops-db
 ```
 
 ## Requirements
@@ -177,6 +183,31 @@ Inspect audit log:
 curl "$ADMIN_BASE_URL/api/audit?limit=20" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
+
+Minimal ops shortcuts:
+
+```bash
+export ADMIN_BASE_URL='http://localhost:3000'
+export ADMIN_TOKEN='replace-me'
+```
+
+```bash
+make ops-status
+make ops-refresh
+make ops-refresh-no-espn
+make ops-audit
+make ops-db
+```
+
+Set or clear a result without retyping the JSON by hand:
+
+```bash
+make ops-result ACTION=set GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena' WINNER='Duke'
+make ops-result ACTION=clear GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena'
+```
+
+`make ops-db` reads from `DB_PATH`, then `MARCH_MADNESS_DB_PATH`, then the
+default `march-madness.db`.
 
 ## Data And Runtime State
 - Static tournament input: [data/tournament-2026.json](/Users/willsmart/dev/brackets/data/tournament-2026.json)
