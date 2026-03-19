@@ -120,18 +120,17 @@ curl https://brackets.willjsmart.com/api/stats
 ```
 
 ## Cloudflare Web Analytics
-This app uses the manual Cloudflare Web Analytics beacon in `app/layout.tsx`.
+Use the existing `willjsmart.com` Web Analytics site in Cloudflare.
 
 1. In the Cloudflare dashboard, go to `Web Analytics`.
-2. Select `Add a site`.
-3. Enter `brackets.willjsmart.com`.
-4. If Cloudflare says the hostname does not belong to a website on this account, continue with manual JS snippet installation.
-5. Confirm the token shown in Cloudflare matches the token in `app/layout.tsx`.
-6. After deploy, open `https://brackets.willjsmart.com` in a browser to generate a page view.
-7. Recheck the Web Analytics dashboard after a few minutes.
+2. Open the existing site for `willjsmart.com`.
+3. Filter by host or URL to inspect `brackets.willjsmart.com`.
+4. After deploy, open `https://brackets.willjsmart.com` in a browser to generate page views.
+5. Recheck the Web Analytics dashboard after a few minutes.
 
-Local note:
-- The beacon can log a CORS error on `localhost` or `127.0.0.1` during local development because the hostname does not match the production site. Verify analytics against the real production URL.
+Notes:
+- `brackets.willjsmart.com` appears under the parent `willjsmart.com` analytics site, not as a separate required app-side beacon.
+- There is no Cloudflare analytics snippet in the app layout.
 
 ## Pre-Tournament Restart Check
 1. Start the app with `pm2`.
