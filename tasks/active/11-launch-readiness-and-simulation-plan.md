@@ -32,6 +32,7 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
   - env-driven database path override via `MARCH_MADNESS_DB_PATH`
   - env-driven ESPN scoreboard override via `ESPN_SCOREBOARD_BASE_URL`
   - homepage refresh button removal
+  - host-side 60-second refresh loop script for automatic ESPN polling
   - local ESPN stub, replay fixture, and replay driver scripts
   - runbook updates for replay rehearsal and manual result follow-up
 - Verified locally on March 18, 2026:

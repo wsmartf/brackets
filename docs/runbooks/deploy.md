@@ -55,6 +55,27 @@ Notes:
   the final manual-override step to confirm the bracket page reflects the new
   eliminated state.
 
+## Optional Auto-Refresh Loop
+There is no built-in scheduler inside the app. If you want ESPN ingest every 60
+seconds, run the host-side refresh loop:
+
+```bash
+export ADMIN_BASE_URL='https://brackets.willjsmart.com'
+export ADMIN_TOKEN='replace-me'
+export REFRESH_INTERVAL_SECONDS=60
+
+make refresh-loop
+```
+
+If you want it supervised by `pm2`:
+
+```bash
+ADMIN_BASE_URL='https://brackets.willjsmart.com' \
+ADMIN_TOKEN='replace-me' \
+REFRESH_INTERVAL_SECONDS=60 \
+pm2 start ./scripts/refresh_loop.sh --name march-madness-refresh --interpreter bash
+```
+
 ## PM2 Commands
 Initial setup:
 

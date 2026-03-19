@@ -26,6 +26,39 @@ curl "$ADMIN_BASE_URL/api/audit?limit=20" \
 ## During The Tournament
 - The homepage no longer exposes a public refresh control.
 - All refreshes and manual result changes should go through the admin API.
+- There is no built-in server-side ESPN poller. If you want automatic ESPN
+  ingest, run the refresh loop below on the host.
+
+- Optional 60-second auto-refresh loop:
+
+```bash
+export ADMIN_BASE_URL='https://brackets.willjsmart.com'
+export ADMIN_TOKEN='replace-me'
+export REFRESH_INTERVAL_SECONDS=60
+
+make refresh-loop
+```
+
+  The loop calls `POST /api/refresh` every 60 seconds. If the previous analysis
+  is still running, the API returns `409` and the loop simply tries again on the
+  next interval.
+
+- Optional `pm2` version of the same loop:
+
+```bash
+ADMIN_BASE_URL='https://brackets.willjsmart.com' \
+ADMIN_TOKEN='replace-me' \
+REFRESH_INTERVAL_SECONDS=60 \
+pm2 start ./scripts/refresh_loop.sh --name march-madness-refresh --interpreter bash
+```
+
+  Useful commands:
+
+```bash
+pm2 logs march-madness-refresh --lines 100
+pm2 stop march-madness-refresh
+pm2 delete march-madness-refresh
+```
 
 - Use normal refresh:
 

@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model train-v2-model verify replay-stub replay-smoke
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model train-v2-model verify replay-stub replay-smoke refresh-loop
 
 install:
 	npm install
@@ -42,3 +42,6 @@ replay-stub:
 
 replay-smoke:
 	node scripts/replay_tournament.mjs
+
+refresh-loop:
+	bash scripts/refresh_loop.sh
