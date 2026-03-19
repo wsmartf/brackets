@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 KAGGLE_DIR = ROOT / "march-machine-learning-mania-2026"
 KENPOM_PATH = ROOT / "kenpom-historical-data" / "kenpom-ratings.csv"
 OUTPUT_DIR = ROOT / "model-data" / "processed"

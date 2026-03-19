@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
 import Database from "better-sqlite3";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
 
 const adminBaseUrl = (process.env.ADMIN_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const adminToken = process.env.ADMIN_TOKEN;
@@ -9,7 +12,7 @@ const stubBaseUrl = (process.env.ESPN_STUB_BASE_URL || "http://127.0.0.1:4100").
   ""
 );
 const scenarioPath = resolve(
-  process.env.ESPN_STUB_SCENARIO || "scripts/fixtures/replay-round64-smoke.json"
+  process.env.ESPN_STUB_SCENARIO || join(scriptDir, "fixtures", "replay-round64-smoke.json")
 );
 const replayStepDelayMs = parseIntegerEnv("REPLAY_STEP_DELAY_MS", 0);
 const replayPollIntervalMs = parseIntegerEnv("REPLAY_POLL_INTERVAL_MS", 500);

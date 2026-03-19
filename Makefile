@@ -28,47 +28,47 @@ collision-stats-smoke:
 	COLLISION_NUM_BRACKETS=10000 npm run collision-stats
 
 backtest-current-model:
-	python3 scripts/backtest_current_model.py
+	python3 scripts/model/backtest_current_model.py
 
 train-v2-model:
-	python3 scripts/train_v2_model.py
+	python3 scripts/model/train_v2_model.py
 
 calibrate-v2:
-	python3 scripts/calibrate_v2.py
+	python3 scripts/model/calibrate_v2.py
 
 calibrate-v2-holdout:
-	python3 scripts/calibrate_v2.py --holdout-only
+	python3 scripts/model/calibrate_v2.py --holdout-only
 
 champion-probs:
-	python3 scripts/champion_probs.py
+	python3 scripts/model/champion_probs.py
 
 verify:
 	npm run typecheck
 	npm run lint
 
 replay-stub:
-	node scripts/espn_stub.mjs
+	node scripts/analysis/espn_stub.mjs
 
 replay-smoke:
-	node scripts/replay_tournament.mjs
+	node scripts/analysis/replay_tournament.mjs
 
 refresh-loop:
-	bash scripts/refresh_loop.sh
+	bash scripts/ops/refresh_loop.sh
 
 ops-status:
-	bash scripts/admin.sh status
+	bash scripts/ops/admin.sh status
 
 ops-refresh:
-	bash scripts/admin.sh refresh
+	bash scripts/ops/admin.sh refresh
 
 ops-refresh-no-espn:
-	bash scripts/admin.sh refresh-no-espn
+	bash scripts/ops/admin.sh refresh-no-espn
 
 ops-audit:
-	bash scripts/admin.sh audit "$(LIMIT)"
+	bash scripts/ops/admin.sh audit "$(LIMIT)"
 
 ops-result:
-	bash scripts/admin.sh result "$(ACTION)" "$(GAME)" "$(ROUND)" "$(TEAM1)" "$(TEAM2)" "$(WINNER)"
+	bash scripts/ops/admin.sh result "$(ACTION)" "$(GAME)" "$(ROUND)" "$(TEAM1)" "$(TEAM2)" "$(WINNER)"
 
 ops-db:
-	bash scripts/db.sh summary
+	bash scripts/ops/db.sh summary

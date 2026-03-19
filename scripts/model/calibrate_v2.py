@@ -13,8 +13,8 @@ Requirements:
     data/model-v2.json
 
 Usage:
-    python3 scripts/calibrate_v2.py
-    python3 scripts/calibrate_v2.py --holdout-only   # only 2022-2025 games
+    python3 scripts/model/calibrate_v2.py
+    python3 scripts/model/calibrate_v2.py --holdout-only   # only 2022-2025 games
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import math
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATASET_PATH = ROOT / "model-data" / "processed" / "historical-tourney-matchups.csv"
 MODEL_PATH = ROOT / "data" / "model-v2.json"
 
@@ -171,7 +171,7 @@ def calibration_report(rows: list[dict], model: dict) -> None:
 def main() -> None:
     if not DATASET_PATH.exists():
         print(f"ERROR: Dataset not found at {DATASET_PATH.relative_to(ROOT)}")
-        print("Run: python3 scripts/build_backtest_dataset.py")
+        print("Run: python3 scripts/model/build_backtest_dataset.py")
         print("(Requires: march-machine-learning-mania-2026/ and kenpom-historical-data/ directories)")
         sys.exit(1)
 

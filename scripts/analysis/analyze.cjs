@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { runAnalysis } = require("../lib/analyze.ts");
+const { runAnalysis } = require("../../lib/analyze.ts");
 
 runAnalysis()
   .then((stats) => {

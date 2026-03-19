@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { buildMatchupProbabilityTable, getInitialOrder } = require("../lib/tournament.ts");
+const { buildMatchupProbabilityTable, getInitialOrder } = require("../../lib/tournament.ts");
 
 const DEFAULT_NUM_BRACKETS = 10_000_000;
 const PROGRESS_EVERY = 1_000_000;

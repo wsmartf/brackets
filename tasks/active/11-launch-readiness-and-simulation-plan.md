@@ -349,7 +349,7 @@ This is optional if roles/text remain stable enough.
 ## Stubbed ESPN Architecture
 
 ### Replay fixture format
-Use a small JSON scenario file, for example under `scripts/fixtures/`.
+Use a small JSON scenario file, for example under `scripts/analysis/fixtures/`.
 The first pass should cover only 3 to 5 Round of 64 finals.
 
 Suggested shape:
@@ -394,7 +394,7 @@ Implementation notes:
 
 ### Stub server behavior
 Build a tiny local HTTP server script under `scripts/`, for example:
-- `scripts/espn_stub.mjs`
+- `scripts/analysis/espn_stub.mjs`
 
 Responsibilities:
 - serve the scoreboard endpoint path used by `fetchScoreboard`
@@ -419,7 +419,7 @@ Do not overbuild this. A single-process local stub is enough.
 ## Replay Driver Design
 
 Create a separate orchestration script, for example:
-- `scripts/replay_tournament.mjs`
+- `scripts/analysis/replay_tournament.mjs`
 
 Responsibilities:
 - boot or expect the app and stub to already be running
@@ -568,9 +568,9 @@ Tonight's harness should cover at least these cases:
 ## What Should Be In The Harness Implementation
 
 ### Files to add
-- `scripts/espn_stub.mjs`
-- `scripts/replay_tournament.mjs`
-- `scripts/fixtures/replay-round64-smoke.json`
+- `scripts/analysis/espn_stub.mjs`
+- `scripts/analysis/replay_tournament.mjs`
+- `scripts/analysis/fixtures/replay-round64-smoke.json`
 
 ### Files likely to modify
 - `lib/espn.ts`

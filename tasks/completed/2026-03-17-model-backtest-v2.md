@@ -288,8 +288,8 @@ Interpretation:
 - [lib/tournament.ts](/Users/willsmart/dev/brackets/lib/tournament.ts)
 - [data/tournament-2026.json](/Users/willsmart/dev/brackets/data/tournament-2026.json)
 - [data.csv](/Users/willsmart/dev/brackets/data.csv)
-- [scripts/normalize_kenpom.py](/Users/willsmart/dev/brackets/scripts/normalize_kenpom.py)
-- [scripts/build_backtest_dataset.py](/Users/willsmart/dev/brackets/scripts/build_backtest_dataset.py)
-- [scripts/backtest_current_model.py](/Users/willsmart/dev/brackets/scripts/backtest_current_model.py)
-- [scripts/train_v2_model.py](/Users/willsmart/dev/brackets/scripts/train_v2_model.py)
+- [scripts/model/normalize_kenpom.py](/Users/willsmart/dev/brackets/scripts/model/normalize_kenpom.py)
+- [scripts/model/build_backtest_dataset.py](/Users/willsmart/dev/brackets/scripts/model/build_backtest_dataset.py)
+- [scripts/model/backtest_current_model.py](/Users/willsmart/dev/brackets/scripts/model/backtest_current_model.py)
+- [scripts/model/train_v2_model.py](/Users/willsmart/dev/brackets/scripts/model/train_v2_model.py)
 - future offline model artifacts under `model/`

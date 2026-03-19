@@ -1,11 +1,14 @@
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
 
 const host = process.env.ESPN_STUB_HOST || "127.0.0.1";
 const port = Number.parseInt(process.env.ESPN_STUB_PORT || "4100", 10);
 const scenarioPath = resolve(
-  process.env.ESPN_STUB_SCENARIO || "scripts/fixtures/replay-round64-smoke.json"
+  process.env.ESPN_STUB_SCENARIO || join(scriptDir, "fixtures", "replay-round64-smoke.json")
 );
 
 const scenario = JSON.parse(readFileSync(scenarioPath, "utf8"));

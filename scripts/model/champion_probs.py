@@ -4,8 +4,8 @@ Quick Monte Carlo simulation of champion probabilities using the V2 model.
 Runs N independent tournament simulations and reports champion + Final Four frequencies.
 
 Usage:
-    python3 scripts/champion_probs.py
-    python3 scripts/champion_probs.py 1000000
+    python3 scripts/model/champion_probs.py
+    python3 scripts/model/champion_probs.py 1000000
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import random
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TOURNAMENT_PATH = ROOT / "data" / "tournament-2026.json"
 MODEL_PATH = ROOT / "data" / "model-v2.json"
 

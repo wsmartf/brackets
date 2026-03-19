@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATASET_PATH = ROOT / "model-data" / "processed" / "historical-tourney-matchups.csv"
 
 TRAIN_END = int(os.environ.get("V2_TRAIN_END", "2017"))

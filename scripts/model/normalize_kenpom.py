@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "kenpom-historical-data"
 OUTPUT_PATH = RAW_DIR / "kenpom-ratings.csv"
 INPUT_GLOB = "kp-*.tsv"

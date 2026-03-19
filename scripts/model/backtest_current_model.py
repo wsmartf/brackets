@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATASET_PATH = ROOT / "model-data" / "processed" / "historical-tourney-matchups.csv"
 
 CURRENT_BETA = 0.07

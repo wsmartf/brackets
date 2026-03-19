@@ -1,92 +1,73 @@
-# Tournament Day Checklist
+# Tournament Day Runbook
+
+This runbook is for live monitoring, refreshes, manual overrides, and incident
+recovery while games are in progress.
+
+## Shell Setup
+Run these once in the shell you are using for live ops:
+
+```bash
+export ADMIN_BASE_URL='https://brackets.willjsmart.com'
+export ADMIN_TOKEN='replace-me'
+```
+
+Optional local-host override when you are on the server itself:
+
+```bash
+export ADMIN_BASE_URL='http://127.0.0.1:3000'
+```
 
 ## Before Games Start
 1. Confirm the app is running under `pm2`.
 2. Confirm the Cloudflare Tunnel is running.
 3. Open `https://brackets.willjsmart.com`.
-4. Run one admin refresh:
+4. Run a basic admin check:
 
 ```bash
-export ADMIN_BASE_URL='https://brackets.willjsmart.com'
-export ADMIN_TOKEN='replace-me'
+make ops-status
+make ops-audit LIMIT=10
+```
 
+## Common Actions
+Use these as the default live workflow:
+
+- Check current app state:
+
+```bash
+make ops-status
+```
+
+- Normal refresh:
+
+```bash
 make ops-refresh
 make ops-status
 ```
 
-5. Check the audit log:
+  `POST /api/refresh` returns `200` when nothing changed and `202 Accepted`
+  when analysis actually starts. If you get `202`, keep checking
+  `make ops-status` until `analysis_running: no`.
 
-```bash
-make ops-audit
-```
-
-## During The Tournament
-- The homepage no longer exposes a public refresh control.
-- All refreshes and manual result changes should go through the admin API.
-- There is no built-in server-side ESPN poller. If you want automatic ESPN
-  ingest, run the refresh loop below on the host.
-
-- Optional 60-second auto-refresh loop:
-
-```bash
-export ADMIN_BASE_URL='https://brackets.willjsmart.com'
-export ADMIN_TOKEN='replace-me'
-export REFRESH_INTERVAL_SECONDS=60
-
-make refresh-loop
-```
-
-  The loop calls `POST /api/refresh` every 60 seconds.
-  - `200` means ESPN found nothing new and cached analysis was already current.
-  - `202` means new work was accepted and analysis started.
-  - `409` means the previous analysis is still running, so the loop simply tries
-    again on the next interval.
-
-- Optional `pm2` version of the same loop:
-
-```bash
-ADMIN_BASE_URL='https://brackets.willjsmart.com' \
-ADMIN_TOKEN='replace-me' \
-REFRESH_INTERVAL_SECONDS=60 \
-pm2 start ./scripts/refresh_loop.sh --name march-madness-refresh --interpreter bash
-```
-
-  Useful commands:
-
-```bash
-pm2 logs march-madness-refresh --lines 100
-pm2 stop march-madness-refresh
-pm2 delete march-madness-refresh
-```
-
-- Use normal refresh:
-
-```bash
-make ops-refresh
-```
-
-  `POST /api/refresh` returns `200` when nothing changed and `202 Accepted` when
-  analysis actually starts. Use `make ops-status` to check whether
-  `analysisStatus.isRunning` has returned to `false` before treating the
-  refresh as complete.
-
-- If ESPN is failing, refresh without ESPN:
+- Refresh without ESPN:
 
 ```bash
 make ops-refresh-no-espn
 make ops-status
 ```
 
-- Manually set a result if needed:
+  Use this if ESPN is failing, slow, or clearly wrong.
+
+- Inspect recent important app events:
+
+```bash
+make ops-audit
+make ops-db
+```
+
+- Manually set a result:
 
 ```bash
 make ops-result ACTION=set GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena' WINNER='Duke'
-```
-
-  After any manual result write, immediately run a no-ESPN refresh and wait for
-  it to finish before trusting the homepage:
-
-```bash
 make ops-refresh-no-espn
 make ops-status
 make ops-audit
@@ -96,12 +77,44 @@ make ops-audit
 
 ```bash
 make ops-result ACTION=clear GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena'
+make ops-refresh-no-espn
+make ops-status
 ```
 
-  Clearing a result has the same follow-up requirement:
+Raw `curl` and SQLite commands still work and remain useful for debugging the
+wrappers themselves.
+
+## Optional Auto-Refresh Loop
+There is no built-in server-side ESPN poller. If you want automatic ESPN ingest
+every 60 seconds, run the host-side refresh loop:
 
 ```bash
-make ops-refresh-no-espn
+export REFRESH_INTERVAL_SECONDS=60
+
+make refresh-loop
+```
+
+The loop calls `POST /api/refresh` every 60 seconds.
+- `200` means ESPN found nothing new and cached analysis was already current.
+- `202` means new work was accepted and analysis started.
+- `409` means the previous analysis is still running, so the loop tries again
+  on the next interval.
+
+If you want it supervised by `pm2`:
+
+```bash
+ADMIN_BASE_URL='https://brackets.willjsmart.com' \
+ADMIN_TOKEN='replace-me' \
+REFRESH_INTERVAL_SECONDS=60 \
+pm2 start ./scripts/ops/refresh_loop.sh --name march-madness-refresh --interpreter bash
+```
+
+Useful commands:
+
+```bash
+pm2 logs march-madness-refresh --lines 100
+pm2 stop march-madness-refresh
+pm2 delete march-madness-refresh
 ```
 
 ## Quick Health Checks
@@ -119,21 +132,17 @@ make ops-audit
 make ops-db
 ```
 
-Local host checks:
+Host process checks:
 
 ```bash
 pm2 status
 pm2 logs march-madness --lines 100
 ```
 
-Raw `curl` and SQLite commands still work and remain useful for debugging the
-wrappers themselves. The shortcuts above are only there to reduce repetitive
-typing during live ops.
-
 ## Stuck Analysis Recovery
-If the homepage shows `recomputing against the latest results...` for a long time
-and `POST /api/refresh` keeps returning `409 Analysis is already running`, the
-app likely restarted during an in-flight analysis run and left
+If the homepage shows `recomputing against the latest results...` for a long
+time and `POST /api/refresh` keeps returning `409 Analysis is already running`,
+the app likely restarted during an in-flight analysis run and left
 `analysis_status.isRunning=true` behind.
 
 Recovery steps:
@@ -170,15 +179,12 @@ console.log(db.prepare("SELECT value FROM stats WHERE key = ?").get("analysis_st
 EOF
 ```
 
-Then verify one manual refresh before restarting the loop:
+Then run one manual refresh before restarting the loop:
 
 ```bash
-curl -X POST "$ADMIN_BASE_URL/api/refresh" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
+make ops-refresh
+make ops-status
 ```
-
-- `200` means no new results and the system is healthy again.
-- `202` means real analysis work started.
 
 After that:
 
@@ -188,6 +194,7 @@ pm2 logs march-madness-refresh --lines 20
 ```
 
 ## First Four
-- The app now handles First Four winner substitution at runtime.
+- The app handles First Four winner substitution at runtime.
 - Do not edit `data/tournament-2026.json` on the live machine.
-- If ESPN does not apply a play-in winner correctly, set the relevant Round of 64 slot manually and refresh.
+- If ESPN does not apply a play-in winner correctly, set the relevant Round of
+  64 slot manually and refresh.

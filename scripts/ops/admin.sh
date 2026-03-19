@@ -8,15 +8,15 @@ BASE_URL="${ADMIN_BASE_URL:-$DEFAULT_BASE_URL}"
 usage() {
   cat <<'EOF'
 Usage:
-  bash scripts/admin.sh status
-  bash scripts/admin.sh refresh
-  bash scripts/admin.sh refresh-no-espn
-  bash scripts/admin.sh audit [limit]
-  bash scripts/admin.sh result set <game_index> <round> <team1> <team2> <winner>
-  bash scripts/admin.sh result clear <game_index> <round> <team1> <team2>
+  bash scripts/ops/admin.sh status
+  bash scripts/ops/admin.sh refresh
+  bash scripts/ops/admin.sh refresh-no-espn
+  bash scripts/ops/admin.sh audit [limit]
+  bash scripts/ops/admin.sh result set <game_index> <round> <team1> <team2> <winner>
+  bash scripts/ops/admin.sh result clear <game_index> <round> <team1> <team2>
 
 Environment:
-  ADMIN_BASE_URL   Defaults to http://127.0.0.1:3000
+  ADMIN_BASE_URL   Defaults to http://localhost:3000
   ADMIN_TOKEN      Required for refresh, audit, and result commands
 EOF
 }

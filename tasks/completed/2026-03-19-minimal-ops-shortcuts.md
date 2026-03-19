@@ -22,7 +22,7 @@ without typing raw `curl` requests or ad hoc SQLite queries.
 
 ## Affected Files
 - `Makefile`
-- `scripts/admin.sh`
-- `scripts/db.sh`
+- `scripts/ops/admin.sh`
+- `scripts/ops/db.sh`
 - `README.md`
 - `docs/runbooks/tournament-day.md`

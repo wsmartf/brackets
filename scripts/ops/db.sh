@@ -3,14 +3,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 DEFAULT_DB_PATH="${REPO_ROOT}/march-madness.db"
 DB_PATH_VALUE="${DB_PATH:-${MARCH_MADNESS_DB_PATH:-$DEFAULT_DB_PATH}}"
 
 usage() {
   cat <<'EOF'
 Usage:
-  bash scripts/db.sh summary
+  bash scripts/ops/db.sh summary
 
 Environment:
   DB_PATH             Optional explicit database path

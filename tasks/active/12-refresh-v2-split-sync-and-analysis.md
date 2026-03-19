@@ -96,7 +96,7 @@ periods, while preserving the external scheduler model.
   without ESPN fetch side effects.
 - Add stale-run recovery for analysis state so restart-mid-run does not require
   manual SQLite intervention.
-- Update `scripts/refresh_loop.sh` to call the split endpoints.
+- Update `scripts/ops/refresh_loop.sh` to call the split endpoints.
 - Update runbooks after the host loop changes.
 - Optionally add a small integration script that asserts:
   - no-op ESPN sync does not flip `analysisStatus.isRunning`
@@ -107,7 +107,7 @@ periods, while preserving the external scheduler model.
 - `lib/espn.ts`
 - `lib/analysis-status.ts`
 - `lib/db.ts`
-- `scripts/refresh_loop.sh`
+- `scripts/ops/refresh_loop.sh`
 - `README.md`
 - `docs/runbooks/tournament-day.md`
 - `docs/runbooks/deploy.md`
