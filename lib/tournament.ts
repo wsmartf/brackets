@@ -15,6 +15,7 @@ import { join } from "path";
 import Database from "better-sqlite3";
 import v2Model from "@/data/model-v2.json";
 import { mulberry32 } from "./prng";
+import { getDatabasePath } from "./runtime-paths";
 
 // ============================================================
 // Types
@@ -435,7 +436,7 @@ export function getBracketSurvivalState(
 }
 
 function readPlayInRowOverrides(): Record<string, Team> {
-  const dbPath = join(process.cwd(), "march-madness.db");
+  const dbPath = getDatabasePath();
 
   try {
     const db = new Database(dbPath, { readonly: true });

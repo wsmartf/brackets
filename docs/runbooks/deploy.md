@@ -12,6 +12,49 @@
 9. Confirm one admin API call works.
 10. Confirm stats/results are still present.
 
+## Pre-Launch Replay Rehearsal
+Run this before games start if you want a full isolated drill against the real
+refresh route without touching the live runtime DB.
+
+Terminal 1, start the local ESPN stub:
+
+```bash
+make replay-stub
+```
+
+Terminal 2, start the app against a disposable DB and the stubbed ESPN source:
+
+```bash
+export ADMIN_TOKEN='replace-me'
+export MARCH_MADNESS_DB_PATH="/tmp/brackets-replay-$(date +%s).db"
+export ESPN_SCOREBOARD_BASE_URL='http://127.0.0.1:4100/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard'
+export ANALYZE_NUM_BRACKETS=10000
+export ANALYZE_NUM_WORKERS=2
+
+make dev
+```
+
+Terminal 3, run the replay driver:
+
+```bash
+export ADMIN_BASE_URL='http://127.0.0.1:3000'
+export ADMIN_TOKEN='replace-me'
+export ESPN_STUB_BASE_URL='http://127.0.0.1:4100'
+export MARCH_MADNESS_DB_PATH='/tmp/brackets-replay-REPLACE_ME.db'
+
+make replay-smoke
+```
+
+Notes:
+- The replay driver refuses to run against the default `march-madness.db`.
+- Replace the `MARCH_MADNESS_DB_PATH` value in terminal 3 with the exact value
+  used in terminal 2.
+- The public homepage does not expose an admin refresh button; refresh testing
+  is API-driven.
+- During the rehearsal, watch `/` in the browser and reload `/bracket/0` after
+  the final manual-override step to confirm the bracket page reflects the new
+  eliminated state.
+
 ## PM2 Commands
 Initial setup:
 
@@ -102,7 +145,8 @@ curl "$ADMIN_BASE_URL/api/stats"
 
 ## If Something Goes Wrong
 - If ESPN fetch is failing or slow, use `POST /api/refresh?espn=false`.
-- If a game result is wrong or delayed, use the manual `POST /api/results` admin API.
+- If a game result is wrong or delayed, use the manual `POST /api/results` admin API,
+  then immediately run `POST /api/refresh?espn=false`.
 - Check `pm2 logs march-madness --lines 100`.
 - Check `GET /api/audit` with the admin token.
 - If the public site is down but the app is healthy locally, check the Cloudflare Tunnel process.

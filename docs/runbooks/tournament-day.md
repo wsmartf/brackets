@@ -24,6 +24,9 @@ curl "$ADMIN_BASE_URL/api/audit?limit=20" \
 ```
 
 ## During The Tournament
+- The homepage no longer exposes a public refresh control.
+- All refreshes and manual result changes should go through the admin API.
+
 - Use normal refresh:
 
 ```bash
@@ -53,6 +56,19 @@ curl -X POST "$ADMIN_BASE_URL/api/results" \
   -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":"Duke"}'
 ```
 
+  After any manual result write, immediately run a no-ESPN refresh and wait for
+  it to finish before trusting the homepage:
+
+```bash
+curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+curl "$ADMIN_BASE_URL/api/stats"
+curl "$ADMIN_BASE_URL/api/results"
+curl "$ADMIN_BASE_URL/api/audit?limit=20" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 - Clear a bad manual result:
 
 ```bash
@@ -60,6 +76,13 @@ curl -X POST "$ADMIN_BASE_URL/api/results" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":null}'
+```
+
+  Clearing a result has the same follow-up requirement:
+
+```bash
+curl -X POST "$ADMIN_BASE_URL/api/refresh?espn=false" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ## Quick Health Checks

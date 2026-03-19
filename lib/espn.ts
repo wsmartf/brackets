@@ -131,6 +131,9 @@ const PLAY_IN_SLOTS: PlayInSlot[] = [
   },
 ];
 
+const DEFAULT_SCOREBOARD_BASE_URL =
+  "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard";
+
 /**
  * Fetch the ESPN scoreboard for a given date.
  *
@@ -158,7 +161,12 @@ const PLAY_IN_SLOTS: PlayInSlot[] = [
  * }
  */
 export async function fetchScoreboard(date: string): Promise<ESPNScoreboard> {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${date}&groups=100&limit=100`;
+  const configuredBaseUrl =
+    process.env.ESPN_SCOREBOARD_BASE_URL?.trim() || DEFAULT_SCOREBOARD_BASE_URL;
+  const url = new URL(configuredBaseUrl);
+  url.searchParams.set("dates", date);
+  url.searchParams.set("groups", "100");
+  url.searchParams.set("limit", "100");
 
   const res = await fetch(url);
   if (!res.ok) {

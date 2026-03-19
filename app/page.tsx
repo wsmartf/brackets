@@ -3,7 +3,7 @@
  *
  * Fetches stats, results, and snapshots. Polls for analysis updates.
  * Renders the hero, stats strip, two-column section, bracket browser,
- * game feed, and admin strip.
+ * and game feed.
  */
 
 "use client";
@@ -48,13 +48,14 @@ export default function Home() {
   });
   const [results, setResults] = useState<GameResult[]>([]);
   const [impacts, setImpacts] = useState<EliminationImpact[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const previousIsRunningRef = useRef(false);
 
   // Stable random ID — initialized to 0 on SSR, set after mount to avoid hydration mismatch
   const [randomId, setRandomId] = useState(0);
   useEffect(() => {
-    setRandomId(Math.floor(Math.random() * 1_000_000_000));
+    queueMicrotask(() => {
+      setRandomId(Math.floor(Math.random() * 1_000_000_000));
+    });
   }, []);
   const [bracketInput, setBracketInput] = useState("");
 
@@ -91,9 +92,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
-    fetchResults();
-    fetchSnapshots();
+    queueMicrotask(() => {
+      void fetchStats();
+      void fetchResults();
+      void fetchSnapshots();
+    });
   }, [fetchStats, fetchResults, fetchSnapshots]);
 
   useEffect(() => {
@@ -109,37 +112,13 @@ export default function Home() {
   useEffect(() => {
     const isRunning = stats.analysisStatus?.isRunning ?? false;
     if (previousIsRunningRef.current && !isRunning) {
-      void fetchResults();
-      void fetchSnapshots();
+      queueMicrotask(() => {
+        void fetchResults();
+        void fetchSnapshots();
+      });
     }
     previousIsRunningRef.current = isRunning;
   }, [fetchResults, fetchSnapshots, stats.analysisStatus?.isRunning]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      const res = await fetch("/api/refresh", { method: "POST" });
-      if (res.status === 202) {
-        const data = await res.json();
-        setStats((current) => ({
-          ...current,
-          analysisStatus: data.analysisStatus,
-        }));
-      } else {
-        const data = await res.json();
-        if (res.ok) {
-          setStats(data);
-        } else {
-          await fetchStats();
-        }
-      }
-    } catch (err) {
-      console.error("Failed to refresh:", err);
-      await fetchStats();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const isAnalysisRunning = stats.analysisStatus?.isRunning ?? false;
   const gamesStarted = stats.gamesCompleted > 0;
@@ -335,7 +314,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* Refresh / admin strip */}
       <footer className="border-t border-white/8 px-6 py-4">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-white/30">
           <div className="space-y-0.5">
@@ -357,13 +335,6 @@ export default function Home() {
               </p>
             )}
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing || isAnalysisRunning}
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white/80 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isRefreshing || isAnalysisRunning ? "Analyzing…" : "Refresh analysis"}
-          </button>
         </div>
       </footer>
     </div>

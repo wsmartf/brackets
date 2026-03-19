@@ -1,8 +1,9 @@
 /**
  * SQLite database for storing game results and cached analysis stats.
  *
- * Uses better-sqlite3 for synchronous, simple access. The DB file lives
- * at the project root as `march-madness.db`.
+ * Uses better-sqlite3 for synchronous, simple access. By default the DB file
+ * lives at the project root as `march-madness.db`, but replay and rehearsal
+ * runs can override it with `MARCH_MADNESS_DB_PATH`.
  *
  * Tables:
  *   results — Game results (64 rows max, one per game). Pre-populated with
@@ -15,8 +16,8 @@
 
 import Database from "better-sqlite3";
 import { createHash } from "crypto";
-import { join } from "path";
 import { buildGameDefinitions } from "./tournament";
+import { getDatabasePath } from "./runtime-paths";
 
 // ============================================================
 // Types
@@ -121,7 +122,7 @@ let _db: Database.Database | null = null;
 
 function getDb(): Database.Database {
   if (!_db) {
-    const dbPath = join(process.cwd(), "march-madness.db");
+    const dbPath = getDatabasePath();
     _db = new Database(dbPath);
     _db.pragma("journal_mode = WAL"); // Better concurrent read performance
     initSchema(_db);

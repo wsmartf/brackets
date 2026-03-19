@@ -28,11 +28,21 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
 
 ## Current Status
 - Code review completed for the launch-critical flow.
-- Basic local verification passed:
+- Implemented:
+  - env-driven database path override via `MARCH_MADNESS_DB_PATH`
+  - env-driven ESPN scoreboard override via `ESPN_SCOREBOARD_BASE_URL`
+  - homepage refresh button removal
+  - local ESPN stub, replay fixture, and replay driver scripts
+  - runbook updates for replay rehearsal and manual result follow-up
+- Verified locally on March 18, 2026:
   - `make verify`
-  - `make analyze-smoke`
-- The simulation harness is not implemented.
-- Several game-day concerns remain.
+  - `make build`
+  - replay harness passed against `http://127.0.0.1:3001` with isolated DB `/tmp/brackets-replay-20260318b.db`
+  - browser check on `/` confirmed updated results and no public refresh button
+  - browser check on `/bracket/0` confirmed the replayed elimination state after reload
+- Remaining launch-day work is operational:
+  - run the same rehearsal in the intended launch environment if desired
+  - use the runbook flow tomorrow morning
 
 ## Decisions Confirmed
 - Remove or hide the public homepage refresh button for launch.
@@ -43,12 +53,9 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
 - Start with a small 3 to 5 game Round of 64 replay.
 
 ## Next Steps
-- Add environment overrides for ESPN base URL and database path.
-- Remove or hide the public homepage refresh button.
-- Build a deterministic ESPN replay stub plus a driver script.
-- Run a scripted local rehearsal with a fast bracket count.
-- Manually verify the homepage during a replay run and verify one bracket detail page by reload.
-- Update the tournament-day runbook to reflect the validated drill.
+- Use the new replay harness for one more rehearsal if you want a pre-launch confidence check.
+- On game day, treat manual result writes as a two-step flow: `POST /api/results`, then `POST /api/refresh?espn=false`.
+- If a production-only issue appears, inspect `GET /api/audit` first before changing code.
 
 ## Affected Files
 - `app/page.tsx`

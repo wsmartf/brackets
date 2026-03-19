@@ -1,0 +1,109 @@
+{
+  "scenario": "round-of-64-smoke",
+  "steps": [
+    {
+      "step": 0,
+      "label": "Initial empty scoreboard",
+      "visibleEventIds": [],
+      "expectedGamesCompleted": 0,
+      "expectedNewGameIndices": []
+    },
+    {
+      "step": 1,
+      "label": "Duke closes out Siena",
+      "visibleEventIds": ["401"],
+      "expectedGamesCompleted": 1,
+      "expectedNewGameIndices": [0]
+    },
+    {
+      "step": 2,
+      "label": "Ohio State beats TCU",
+      "visibleEventIds": ["401", "402"],
+      "expectedGamesCompleted": 2,
+      "expectedNewGameIndices": [1]
+    },
+    {
+      "step": 3,
+      "label": "Kansas beats Cal Baptist",
+      "visibleEventIds": ["401", "402", "403"],
+      "expectedGamesCompleted": 3,
+      "expectedNewGameIndices": [3]
+    },
+    {
+      "step": 4,
+      "label": "Manual override blocks ESPN on Louisville game",
+      "visibleEventIds": ["401", "402", "403", "404"],
+      "expectedQueuedCount": 0,
+      "expectedProcessedCount": 0,
+      "preActions": [
+        {
+          "type": "manual_result",
+          "gameIndex": 4,
+          "round": 64,
+          "team1": "Louisville",
+          "team2": "South Florida",
+          "winner": "South Florida"
+        }
+      ],
+      "expectedGamesCompleted": 4,
+      "expectedNewGameIndices": [4],
+      "expectedWinnerByGame": {
+        "4": "South Florida"
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "401",
+      "gameIndex": 0,
+      "round": 64,
+      "date": "2026-03-19T17:15:00Z",
+      "team1": "Duke",
+      "team2": "Siena",
+      "winner": "Duke",
+      "score1": 82,
+      "score2": 61,
+      "seed1": 1,
+      "seed2": 16
+    },
+    {
+      "id": "402",
+      "gameIndex": 1,
+      "round": 64,
+      "date": "2026-03-19T17:40:00Z",
+      "team1": "Ohio State",
+      "team2": "TCU",
+      "winner": "Ohio State",
+      "score1": 74,
+      "score2": 69,
+      "seed1": 8,
+      "seed2": 9
+    },
+    {
+      "id": "403",
+      "gameIndex": 3,
+      "round": 64,
+      "date": "2026-03-19T18:05:00Z",
+      "team1": "Kansas",
+      "team2": "Cal Baptist",
+      "winner": "Kansas",
+      "score1": 87,
+      "score2": 58,
+      "seed1": 4,
+      "seed2": 13
+    },
+    {
+      "id": "404",
+      "gameIndex": 4,
+      "round": 64,
+      "date": "2026-03-19T18:30:00Z",
+      "team1": "Louisville",
+      "team2": "South Florida",
+      "winner": "Louisville",
+      "score1": 79,
+      "score2": 66,
+      "seed1": 6,
+      "seed2": 11
+    }
+  ]
+}
