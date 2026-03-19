@@ -2,8 +2,7 @@
  * Homepage — editorial redesign.
  *
  * Fetches stats, results, and snapshots. Polls for analysis updates.
- * Renders the hero, stats strip, two-column section, bracket browser,
- * and game feed.
+ * Renders the hero, stats strip, two-column section, and bracket browser.
  */
 
 "use client";
@@ -11,9 +10,9 @@
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import ProbabilityBars from "@/components/ProbabilityBars";
-import GameFeed, { EliminationImpact } from "@/components/GameFeed";
 import KillerLeaderboard from "@/components/KillerLeaderboard";
 import SiteNav from "@/components/SiteNav";
+import type { EliminationImpact } from "@/components/GameFeed";
 
 interface Stats {
   remaining: number;
@@ -39,6 +38,30 @@ interface GameResult {
   updated_at: string;
 }
 
+function formatRelativeTime(timestamp: string, now: number): string {
+  const then = new Date(timestamp).getTime();
+  if (!Number.isFinite(then)) {
+    return "";
+  }
+
+  const elapsedMinutes = Math.max(0, Math.floor((now - then) / 60_000));
+  if (elapsedMinutes < 1) {
+    return "just now";
+  }
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
+}
+
 export default function Home() {
   const [stats, setStats] = useState<Stats>({
     remaining: 1_000_000_000,
@@ -48,6 +71,7 @@ export default function Home() {
   });
   const [results, setResults] = useState<GameResult[]>([]);
   const [impacts, setImpacts] = useState<EliminationImpact[]>([]);
+  const [now, setNow] = useState(() => Date.now());
   const previousIsRunningRef = useRef(false);
 
   // Stable random ID — initialized to 0 on SSR, set after mount to avoid hydration mismatch
@@ -110,6 +134,15 @@ export default function Home() {
   }, [fetchStats, stats.analysisStatus?.isRunning]);
 
   useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60_000);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
     const isRunning = stats.analysisStatus?.isRunning ?? false;
     if (previousIsRunningRef.current && !isRunning) {
       queueMicrotask(() => {
@@ -125,17 +158,34 @@ export default function Home() {
   const hasData =
     Object.keys(stats.championshipProbs ?? {}).length > 0 || impacts.length > 0;
 
-  // Most recent exact elimination impact for the delta line
   const exactImpacts = impacts.filter(
     (i) => i.exact && i.eliminated != null && i.gameIndex != null
   );
-  const latestImpact =
-    exactImpacts.length > 0
-      ? exactImpacts[exactImpacts.length - 1]
-      : null;
-  const latestGame = latestImpact
-    ? results.find((r) => r.game_index === latestImpact.gameIndex)
+  const completedResults = results
+    .filter((result) => result.winner)
+    .sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+  const latestGame = completedResults[0] ?? null;
+
+  const impactByGame = new Map<number, EliminationImpact>();
+  for (const impact of impacts) {
+    if (impact.gameIndex != null) {
+      impactByGame.set(impact.gameIndex, impact);
+    }
+  }
+  const latestGameImpact = latestGame
+    ? impactByGame.get(latestGame.game_index) ?? null
     : null;
+  const latestGameLoser =
+    latestGame && latestGame.winner
+      ? latestGame.winner === latestGame.team1
+        ? latestGame.team2
+        : latestGame.team1
+      : null;
+  const latestGameRelativeTime =
+    latestGame ? formatRelativeTime(latestGame.updated_at, now) : null;
 
   // Stats strip numbers
   const eliminated = stats.totalBrackets - stats.remaining;
@@ -174,15 +224,25 @@ export default function Home() {
                 : "brackets generated, waiting for tip-off"}
           </p>
 
-          {latestImpact && latestGame && latestGame.winner && (
-            <p className="mt-4 text-rose-400 text-base sm:text-lg font-medium">
-              {latestGame.winner} over{" "}
-              {latestGame.winner === latestGame.team1
-                ? latestGame.team2
-                : latestGame.team1}{" "}
-              just eliminated{" "}
-              {(latestImpact.eliminated ?? 0).toLocaleString()} brackets.
-            </p>
+          {latestGame && latestGame.winner && latestGameLoser && (
+            <div className="mt-4 space-y-1">
+              <p className="text-rose-400 text-base sm:text-lg font-medium">
+                Latest result: {latestGame.winner} over {latestGameLoser}
+              </p>
+              <p className="text-sm text-white/40">
+                {latestGameImpact?.eliminated != null && (
+                  <>
+                    {latestGameImpact.exact ? "" : "~"}
+                    {latestGameImpact.eliminated.toLocaleString()} brackets
+                    eliminated
+                    {latestGameRelativeTime ? " • " : ""}
+                  </>
+                )}
+                {latestGameRelativeTime && (
+                  <span suppressHydrationWarning>{latestGameRelativeTime}</span>
+                )}
+              </p>
+            </div>
           )}
 
           <p className="mt-4 text-white/30 text-sm italic">
@@ -308,17 +368,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Game feed — only when results exist */}
-      {results.some((r) => r.winner) && (
-        <section className="px-6 pb-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <GameFeed results={results} impacts={impacts} />
-            </div>
-          </div>
-        </section>
-      )}
 
       <footer className="border-t border-white/8 px-6 py-4">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-white/30">
