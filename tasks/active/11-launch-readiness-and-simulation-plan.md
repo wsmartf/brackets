@@ -34,12 +34,20 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
 - The simulation harness is not implemented.
 - Several game-day concerns remain.
 
+## Decisions Confirmed
+- Remove or hide the public homepage refresh button for launch.
+- Accept reload-only behavior for `/bracket/[id]` for launch day.
+- Build the first simulation harness as scripts only.
+- Use manual browser checking during the replay rather than building Playwright coverage first.
+- Add an env-driven database path override as the preferred isolation mechanism.
+- Start with a small 3 to 5 game Round of 64 replay.
+
 ## Next Steps
-- Decide whether the public homepage refresh button should exist at launch.
 - Add environment overrides for ESPN base URL and database path.
+- Remove or hide the public homepage refresh button.
 - Build a deterministic ESPN replay stub plus a driver script.
 - Run a scripted local rehearsal with a fast bracket count.
-- Add one focused browser verification flow for the homepage and one for a bracket detail page.
+- Manually verify the homepage during a replay run and verify one bracket detail page by reload.
 - Update the tournament-day runbook to reflect the validated drill.
 
 ## Affected Files
@@ -73,7 +81,7 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
   - Public users clicking "Refresh analysis" will get `401 Unauthorized`.
   - The button appears to be a public control even though the route is private.
 - Game-day requirement:
-  - Either remove/hide the button from the public homepage, or introduce an explicit authenticated admin-only UI. Do not leave it ambiguous.
+  - Remove or hide the button from the public homepage for launch. Do not leave it visible unless there is a real authenticated admin UI.
 
 ### 2. Manual result entry does not trigger analysis
 - `POST /api/results` writes the result, resets tournament caches, and writes an audit log, but it does not enqueue analysis or call `runAnalysis`.
@@ -119,9 +127,9 @@ Make the app game-day-ready for the morning of March 19, 2026 by:
   - A user sitting on `/bracket/[id]` will not see their bracket status change unless they reload or navigate again.
   - The "Live Bracket Status" label is stronger than the current behavior.
 - Game-day requirement:
-  - Decide whether reload-only behavior is acceptable for launch.
-  - If yes, document it and verify reload behavior.
-  - If no, add polling against `GET /api/bracket/[id]` and test it explicitly.
+  - Reload-only behavior is acceptable for launch.
+  - Document it and verify reload behavior during the replay drill.
+  - Do not spend launch-night time adding live polling unless another blocking issue is already resolved.
 
 ### 6. The database path is hard-coded, which makes safe simulation harder
 - `lib/db.ts` always opens `join(process.cwd(), "march-madness.db")`.
@@ -182,7 +190,7 @@ The app should be considered ready only if all of the following are true:
 - The homepage reflects analysis progress while a refresh is running.
 - The homepage updates results and impact views when the run finishes.
 - The bracket page correctly shows alive/dead state after reload for a bracket known to be affected by a result.
-- If the refresh button remains on the homepage, its behavior is deliberate and tested. Right now it is neither.
+- The misleading public refresh button is removed or hidden.
 
 ### Rehearsal readiness
 - You can run a fast local simulation from a fresh DB and fixture set.
@@ -226,6 +234,42 @@ Flow:
 6. Assert API state, audit events, queue draining, and homepage behavior.
 7. Repeat for several games, plus failure scenarios.
 
+## How The Current UI Actually Behaves
+
+### Homepage
+- The homepage does not require a full browser reload after a refresh run completes.
+- It polls `GET /api/stats` every 15 seconds while idle and every 3 seconds while analysis is running.
+- Relevant file:
+  - `app/page.tsx:98`
+- When `analysisStatus.isRunning` flips from `true` to `false`, the homepage fetches:
+  - `GET /api/results`
+  - `GET /api/snapshots`
+- Relevant file:
+  - `app/page.tsx:108`
+- Practical meaning:
+  - if `POST /api/refresh` is called and completes successfully, the homepage should update on its own
+  - the user should not need a browser reload to see the updated homepage stats and game feed
+
+### Manual result caveat
+- `POST /api/results` alone does not kick off analysis.
+- Relevant file:
+  - `app/api/results/route.ts:24`
+- Practical meaning:
+  - if an operator manually sets a result but does not run `POST /api/refresh?espn=false`, the homepage may remain stale
+  - manual result writes must be treated as a two-step operator flow: write result, then refresh analysis
+
+### Bracket detail page
+- `/bracket/[id]` is server-rendered from the current DB state at request time.
+- Relevant file:
+  - `app/bracket/[id]/page.tsx:20`
+- The client-side viewer has no polling logic.
+- Relevant file:
+  - `components/BracketViewer.tsx:59`
+- Practical meaning:
+  - a user sitting on a bracket page will not see the status change live
+  - reloading the page should show the latest alive/dead state
+  - this reload-only behavior is acceptable for launch
+
 ## Simulation Harness Design
 
 ### Design goals
@@ -238,6 +282,7 @@ Flow:
 - Stub only the ESPN upstream, not the refresh route itself.
 - Keep the replay deterministic and small.
 - Make failures obvious and actionable.
+- Optimize for launch confidence, not broad automation coverage.
 
 ### Required code changes before the harness exists
 
@@ -269,6 +314,7 @@ Needed change:
 
 Why this matters:
 - The harness must not mutate the real `march-madness.db`.
+- This is the simplest and safest isolation mechanism for tomorrow.
 
 Target files:
 - `lib/db.ts`
@@ -296,6 +342,7 @@ This is optional if roles/text remain stable enough.
 
 ### Replay fixture format
 Use a small JSON scenario file, for example under `scripts/fixtures/`.
+The first pass should cover only 3 to 5 Round of 64 finals.
 
 Suggested shape:
 
@@ -419,7 +466,7 @@ At the end, print:
 
 Per repo policy, any user-facing UI change or user-visible flow should be checked in the browser.
 
-Even if the harness itself is mostly script-based, browser verification should cover:
+For the first pass, the harness itself can stay script-only and browser validation can be manual during the replay. That manual verification should cover:
 
 ### Homepage
 - open `/`
@@ -445,9 +492,7 @@ Relevant files:
 - `components/BracketViewer.tsx`
 
 ### Refresh button decision
-If the public refresh button remains:
-- explicitly verify what happens on click
-- if it is expected to fail for non-admin users, that is a product bug, not a test outcome
+For launch, the public refresh button should be removed or hidden rather than browser-tested in its current form.
 
 ## Scenario Coverage Matrix
 
@@ -505,12 +550,12 @@ Tonight's harness should cover at least these cases:
 
 1. Add DB path override support.
 2. Add ESPN base URL override support.
-3. Build the local ESPN stub.
-4. Create one minimal replay fixture with 3 to 5 Round of 64 games.
-5. Build the replay driver script.
-6. Validate API-only assertions first.
-7. Add small browser verification, manually or via Playwright.
-8. Decide on the homepage refresh button before launch.
+3. Remove or hide the public homepage refresh button.
+4. Build the local ESPN stub.
+5. Create one minimal replay fixture with 3 to 5 Round of 64 games.
+6. Build the replay driver script.
+7. Validate API-only assertions first.
+8. Manually watch the homepage during a replay run and verify one bracket page by reload.
 
 ## What Should Be In The Harness Implementation
 
@@ -564,17 +609,19 @@ Should include:
 - a note about any DB path override used for rehearsal
 
 ## Questions That Need Decisions
+No blocking product questions remain for the first-pass implementation.
 
-1. Should the public homepage keep the "Refresh analysis" button at launch, or should it be hidden/removed unless an authenticated admin session exists?
-2. Is reload-only behavior acceptable for the bracket detail page on launch day, or do you want it to auto-refresh while a user is watching?
-3. Do you want the simulation harness to be purely script-driven, or should it include an actual Playwright test file in the repo as part of the first implementation?
-4. Are you comfortable adding one env-driven DB path override, or do you want simulation isolation to happen only by copying the whole worktree and DB file?
-5. For tonight, is a small 3 to 5 game Round of 64 scenario enough, or do you want a fuller all-day replay sequence with more timings and failure cases?
+The decisions for the next session should be treated as:
+- remove or hide the public refresh button
+- keep `/bracket/[id]` reload-only for launch
+- build the harness as scripts first
+- add env-driven DB path override
+- start with a small Round of 64 replay
 
 ## Recommendation
 
 For launch tomorrow morning, the minimum viable path is:
-- fix or hide the public refresh button
+- remove or hide the public refresh button
 - add isolated DB and ESPN URL overrides
 - implement one deterministic replay harness
 - run one full local rehearsal
