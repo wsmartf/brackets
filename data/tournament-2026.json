@@ -6,7 +6,7 @@
     "Midwest",
     "South"
   ],
-  "notes": "KenPom-derived features include AdjEM (netRating), adjusted offense/defense, adjusted tempo, and schedule strength. Production win probabilities are computed from a frozen V2 logistic-regression model over team feature differences. First Four placeholders: UMBC beat Howard (tonight), Texas/NC State TBD \u2192 plays BYU, Prairie View/Lehigh TBD \u2192 plays Florida, SMU/Miami OH TBD \u2192 plays Tennessee. Update these after First Four results.",
+  "notes": "KenPom-derived features include AdjEM (netRating), adjusted offense/defense, adjusted tempo, and schedule strength. Production win probabilities are computed from a frozen V2 logistic-regression model over team feature differences. First Four results: Howard beat UMBC 86-83 (Midwest 16), Texas beat NC State 68-66 (West 11), Prairie View A&M beat Lehigh 67-55 (South 16), Miami OH beat SMU 89-79 (Midwest 11).",
   "teams": [
     {
       "name": "Duke",
@@ -372,15 +372,15 @@
       "scheduleNetRating": 16.66
     },
     {
-      "name": "UMBC",
+      "name": "Howard",
       "seed": 16,
       "region": "Midwest",
-      "kenpomRank": 185,
-      "netRating": -1.67,
-      "offenseRating": 108.8,
-      "defenseRating": 110.8,
-      "adjTempo": 66.3,
-      "scheduleNetRating": -14.48
+      "kenpomRank": 207,
+      "netRating": -3.19,
+      "offenseRating": 103.1,
+      "defenseRating": 106.3,
+      "adjTempo": 69.0,
+      "scheduleNetRating": -14.6
     },
     {
       "name": "Georgia",
@@ -460,15 +460,15 @@
       "scheduleNetRating": 14.78
     },
     {
-      "name": "SMU",
+      "name": "Miami OH",
       "seed": 11,
       "region": "Midwest",
-      "kenpomRank": 42,
-      "netRating": 18.09,
-      "offenseRating": 122.9,
-      "defenseRating": 104.8,
-      "adjTempo": 68.6,
-      "scheduleNetRating": 11.16
+      "kenpomRank": 93,
+      "netRating": 8.26,
+      "offenseRating": 116.8,
+      "defenseRating": 108.5,
+      "adjTempo": 69.9,
+      "scheduleNetRating": -5.37
     },
     {
       "name": "Virginia",
