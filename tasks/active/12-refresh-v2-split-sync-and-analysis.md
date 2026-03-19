@@ -30,6 +30,9 @@ design for later tonight.
     analysis already matches current results.
   - The host refresh loop can keep polling every 60 seconds without flipping the
     public homepage into `analysis running` on every poll.
+  - Production incident found a separate gap: if the app restarts mid-analysis,
+    `analysis_status.isRunning` can remain stranded as `true` and force every
+    later refresh into `409 Analysis is already running` until manually cleared.
 - Current architecture remains mixed:
   - `/api/refresh` still does ESPN sync and analysis orchestration in one route.
   - The external `pm2` loop still calls `POST /api/refresh`.
@@ -91,6 +94,8 @@ periods, while preserving the external scheduler model.
 - Add `POST /api/espn-sync`.
 - Refactor the current refresh route so analysis orchestration can be called
   without ESPN fetch side effects.
+- Add stale-run recovery for analysis state so restart-mid-run does not require
+  manual SQLite intervention.
 - Update `scripts/refresh_loop.sh` to call the split endpoints.
 - Update runbooks after the host loop changes.
 - Optionally add a small integration script that asserts:

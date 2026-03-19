@@ -184,6 +184,10 @@ for it to become `false` before trusting the updated cached stats.
 - If ESPN fetch is failing or slow, use `POST /api/refresh?espn=false`.
 - If a game result is wrong or delayed, use the manual `POST /api/results` admin API,
   then immediately run `POST /api/refresh?espn=false`.
+- If `POST /api/refresh` keeps returning `409 Analysis is already running` after
+  an app restart, inspect the `analysis_status` row in SQLite. A mid-run restart
+  can strand `isRunning=true`. Use the tournament-day runbook recovery steps to
+  clear the stuck flag before restarting the refresh loop.
 - Check `pm2 logs march-madness --lines 100`.
 - Check `GET /api/audit` with the admin token.
 - If the public site is down but the app is healthy locally, check the Cloudflare Tunnel process.

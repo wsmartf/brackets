@@ -142,6 +142,63 @@ pm2 status
 pm2 logs march-madness --lines 100
 ```
 
+## Stuck Analysis Recovery
+If the homepage shows `recomputing against the latest results...` for a long time
+and `POST /api/refresh` keeps returning `409 Analysis is already running`, the
+app likely restarted during an in-flight analysis run and left
+`analysis_status.isRunning=true` behind.
+
+Recovery steps:
+
+```bash
+pm2 stop march-madness-refresh
+export DB_PATH="${MARCH_MADNESS_DB_PATH:-march-madness.db}"
+
+sqlite3 "$DB_PATH" "select key, value from stats where key in ('analysis','analysis_status');"
+```
+
+If `analysis_status.isRunning` is still `true` and no analysis is actually
+running, clear it:
+
+```bash
+DB_PATH="$DB_PATH" node - <<'EOF'
+const Database = require('better-sqlite3');
+const db = new Database(process.env.DB_PATH);
+const status = JSON.parse(db.prepare("SELECT value FROM stats WHERE key = ?").get("analysis_status").value);
+const analysis = JSON.parse(db.prepare("SELECT value FROM stats WHERE key = ?").get("analysis").value);
+
+status.isRunning = false;
+status.lastFinishedAt = analysis.analyzedAt || status.lastStartedAt || new Date().toISOString();
+
+db.prepare(`
+  INSERT INTO stats (key, value, updated_at)
+  VALUES (?, ?, datetime('now'))
+  ON CONFLICT(key) DO UPDATE SET
+    value = excluded.value,
+    updated_at = excluded.updated_at
+`).run("analysis_status", JSON.stringify(status));
+
+console.log(db.prepare("SELECT value FROM stats WHERE key = ?").get("analysis_status").value);
+EOF
+```
+
+Then verify one manual refresh before restarting the loop:
+
+```bash
+curl -X POST "$ADMIN_BASE_URL/api/refresh" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+- `200` means no new results and the system is healthy again.
+- `202` means real analysis work started.
+
+After that:
+
+```bash
+pm2 start march-madness-refresh
+pm2 logs march-madness-refresh --lines 20
+```
+
 ## First Four
 - The app now handles First Four winner substitution at runtime.
 - Do not edit `data/tournament-2026.json` on the live machine.
