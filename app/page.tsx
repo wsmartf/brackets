@@ -38,8 +38,21 @@ interface GameResult {
   updated_at: string;
 }
 
+function parseTimestampMs(timestamp: string): number {
+  const normalized = timestamp.includes("T") ? timestamp : timestamp.replace(" ", "T");
+  const hasTimezone = /(?:[zZ]|[+-]\d{2}:\d{2})$/.test(normalized);
+  const parseable = hasTimezone ? normalized : `${normalized}Z`;
+  const parsed = new Date(parseable).getTime();
+
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  }
+
+  return new Date(timestamp).getTime();
+}
+
 function formatRelativeTime(timestamp: string, now: number): string {
-  const then = new Date(timestamp).getTime();
+  const then = parseTimestampMs(timestamp);
   if (!Number.isFinite(then)) {
     return "";
   }
@@ -164,8 +177,7 @@ export default function Home() {
   const completedResults = results
     .filter((result) => result.winner)
     .sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      (a, b) => parseTimestampMs(b.updated_at) - parseTimestampMs(a.updated_at)
     );
   const latestGame = completedResults[0] ?? null;
 
