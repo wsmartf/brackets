@@ -165,14 +165,9 @@ export default function Home() {
           <p className="text-xl sm:text-2xl text-white/60 mt-4 font-medium">
             {isAnalysisRunning
               ? (
-                <>
-                  recomputing against the latest results{" "}
-                  <span aria-hidden="true" className="inline-flex">
-                    <span className="animate-pulse [animation-delay:0ms]">.</span>
-                    <span className="animate-pulse [animation-delay:150ms]">.</span>
-                    <span className="animate-pulse [animation-delay:300ms]">.</span>
-                  </span>
-                </>
+                <span className="inline-block animate-pulse text-white/75">
+                  recomputing against the latest results...
+                </span>
               )
               : gamesStarted
                 ? "still perfect"
