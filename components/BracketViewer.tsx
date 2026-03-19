@@ -147,19 +147,24 @@ export default function BracketViewer({
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
                 Bracket <span className="font-mono">#{formatBracketId(id)}</span>
               </h1>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-stretch gap-3">
                 <span
-                  className={`rounded-full border px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] ${
+                  className={`inline-flex items-center rounded-[1.1rem] border px-5 py-3 text-lg font-black uppercase tracking-[0.24em] shadow-sm sm:text-xl ${
                     alive
-                      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700"
-                      : "border-rose-500/25 bg-rose-500/10 text-rose-700"
+                      ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-700"
+                      : "border-rose-500/25 bg-rose-500/12 text-rose-700"
                   }`}
                 >
                   {alive ? "Alive" : "Dead"}
                 </span>
                 {championPick ? (
-                  <span className="rounded-full border border-black/10 bg-stone-100 px-4 py-2 text-sm text-stone-700">
-                    Champion pick: <strong>{championPick}</strong>
+                  <span className="rounded-[1.1rem] border border-black/10 bg-stone-100 px-5 py-3 text-stone-700 shadow-sm">
+                    <span className="block text-[11px] uppercase tracking-[0.22em] text-stone-500">
+                      Champion Pick
+                    </span>
+                    <strong className="mt-1 block text-xl font-semibold text-stone-950 sm:text-2xl">
+                      {championPick}
+                    </strong>
                   </span>
                 ) : null}
               </div>
@@ -295,16 +300,27 @@ export default function BracketViewer({
                   </span>
                 </div>
 
-                <div className="mt-4 grid gap-2 text-sm leading-6 text-stone-700 sm:grid-cols-2">
-                  <p>
-                    Picked: <strong className="text-stone-950">{pick.pick}</strong>
-                  </p>
-                  <p>
-                    Actual winner:{" "}
-                    <strong className={pick.winner ? "text-stone-950" : "text-stone-500"}>
+                <div className="mt-4 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+                  <div className="rounded-2xl border border-black/8 bg-white px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-stone-500">
+                      Picked
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-stone-950">
+                      {pick.pick}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-black/8 bg-stone-100 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-stone-500">
+                      Actual winner
+                    </p>
+                    <p
+                      className={`mt-2 text-lg font-semibold tracking-tight ${
+                        pick.winner ? "text-stone-950" : "text-stone-500"
+                      }`}
+                    >
                       {pick.winner ?? "Not decided yet"}
-                    </strong>
-                  </p>
+                    </p>
+                  </div>
                 </div>
               </article>
             ))}
