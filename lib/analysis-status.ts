@@ -9,6 +9,7 @@ export interface AnalysisStatus {
 }
 
 interface PersistedAnalysisStatus {
+  isRunning: boolean;
   lastStartedAt: string | null;
   lastFinishedAt: string | null;
   lastError: string | null;
@@ -18,13 +19,12 @@ interface PersistedAnalysisStatus {
 const STATUS_KEY = "analysis_status";
 
 const DEFAULT_PERSISTED_STATUS: PersistedAnalysisStatus = {
+  isRunning: false,
   lastStartedAt: null,
   lastFinishedAt: null,
   lastError: null,
   triggerSource: null,
 };
-
-let activeRun: { startedAt: string; triggerSource: string } | null = null;
 
 function readPersistedStatus(): PersistedAnalysisStatus {
   const raw = getStats(STATUS_KEY);
@@ -46,49 +46,103 @@ function writePersistedStatus(status: PersistedAnalysisStatus): void {
   setStats(STATUS_KEY, JSON.stringify(status));
 }
 
-export function getAnalysisStatus(): AnalysisStatus {
-  const persisted = readPersistedStatus();
+function readLatestAnalyzedAt(): string | null {
+  const raw = getStats("analysis");
+  if (!raw) {
+    return null;
+  }
 
+  try {
+    const parsed = JSON.parse(raw) as { analyzedAt?: unknown };
+    return typeof parsed.analyzedAt === "string" ? parsed.analyzedAt : null;
+  } catch {
+    return null;
+  }
+}
+
+function toStatus(status: PersistedAnalysisStatus): AnalysisStatus {
   return {
-    isRunning: activeRun !== null,
-    lastStartedAt: activeRun?.startedAt ?? persisted.lastStartedAt,
-    lastFinishedAt: persisted.lastFinishedAt,
-    lastError: persisted.lastError,
-    triggerSource: activeRun?.triggerSource ?? persisted.triggerSource,
+    isRunning: status.isRunning,
+    lastStartedAt: status.lastStartedAt,
+    lastFinishedAt: status.lastFinishedAt,
+    lastError: status.lastError,
+    triggerSource: status.triggerSource,
   };
 }
 
+function reconcileStatus(status: PersistedAnalysisStatus): PersistedAnalysisStatus {
+  if (!status.isRunning) {
+    return status;
+  }
+
+  if (!status.lastStartedAt) {
+    const repaired = {
+      ...status,
+      isRunning: false,
+    };
+    writePersistedStatus(repaired);
+    return repaired;
+  }
+
+  if (status.lastFinishedAt && status.lastFinishedAt >= status.lastStartedAt) {
+    const repaired = {
+      ...status,
+      isRunning: false,
+    };
+    writePersistedStatus(repaired);
+    return repaired;
+  }
+
+  const analyzedAt = readLatestAnalyzedAt();
+  if (analyzedAt && analyzedAt >= status.lastStartedAt) {
+    const repaired = {
+      ...status,
+      isRunning: false,
+      lastFinishedAt: status.lastFinishedAt ?? analyzedAt,
+    };
+    writePersistedStatus(repaired);
+    return repaired;
+  }
+
+  return status;
+}
+
+export function getAnalysisStatus(): AnalysisStatus {
+  const persisted = reconcileStatus(readPersistedStatus());
+
+  return toStatus(persisted);
+}
+
 export function startAnalysisRun(triggerSource = "manual"): AnalysisStatus | null {
-  if (activeRun) {
+  const persisted = reconcileStatus(readPersistedStatus());
+  if (persisted.isRunning) {
     return null;
   }
 
   const startedAt = new Date().toISOString();
-  activeRun = { startedAt, triggerSource };
-
-  const persisted = readPersistedStatus();
-  writePersistedStatus({
+  const nextStatus: PersistedAnalysisStatus = {
     ...persisted,
+    isRunning: true,
     lastStartedAt: startedAt,
     lastError: null,
     triggerSource,
-  });
+  };
+  writePersistedStatus(nextStatus);
 
-  return getAnalysisStatus();
+  return toStatus(nextStatus);
 }
 
 export function finishAnalysisRun(error?: unknown): AnalysisStatus {
   const persisted = readPersistedStatus();
   const lastError =
     error instanceof Error ? error.message : error ? String(error) : null;
-
-  writePersistedStatus({
+  const nextStatus: PersistedAnalysisStatus = {
     ...persisted,
+    isRunning: false,
     lastFinishedAt: new Date().toISOString(),
     lastError,
-    triggerSource: activeRun?.triggerSource ?? persisted.triggerSource,
-  });
+  };
+  writePersistedStatus(nextStatus);
 
-  activeRun = null;
-  return getAnalysisStatus();
+  return toStatus(nextStatus);
 }

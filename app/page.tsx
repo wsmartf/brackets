@@ -158,14 +158,33 @@ export default function Home() {
             I generated 1 billion March Madness brackets.
           </p>
 
-          <h1 className="text-7xl sm:text-8xl lg:text-[9rem] font-bold tabular-nums leading-none text-white">
-            {stats.remaining.toLocaleString()}
-          </h1>
+          <div className="relative inline-block">
+            <h1
+              className={`text-7xl sm:text-8xl lg:text-[9rem] font-bold tabular-nums leading-none text-white transition-opacity ${
+                isAnalysisRunning ? "opacity-50" : "opacity-100"
+              }`}
+            >
+              {stats.remaining.toLocaleString()}
+            </h1>
+
+            {isAnalysisRunning && (
+              <div
+                aria-live="polite"
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <div className="rounded-full border border-amber-300/30 bg-black/45 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-200 backdrop-blur-sm">
+                  Refreshing analysis...
+                </div>
+              </div>
+            )}
+          </div>
 
           <p className="text-xl sm:text-2xl text-white/60 mt-4 font-medium">
-            {gamesStarted
-              ? "still perfect"
-              : "brackets generated, waiting for tip-off"}
+            {isAnalysisRunning
+              ? "recomputing against the latest results"
+              : gamesStarted
+                ? "still perfect"
+                : "brackets generated, waiting for tip-off"}
           </p>
 
           {latestImpact && latestGame && latestGame.winner && (
