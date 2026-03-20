@@ -75,6 +75,14 @@ function formatRelativeTime(timestamp: string, now: number): string {
   return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
 }
 
+function formatAlivePercentage(remaining: number, totalBrackets: number): string {
+  if (totalBrackets <= 0) {
+    return "0.0000%";
+  }
+
+  return `${((remaining / totalBrackets) * 100).toFixed(4)}%`;
+}
+
 export default function Home() {
   const [stats, setStats] = useState<Stats>({
     remaining: 1_000_000_000,
@@ -201,6 +209,7 @@ export default function Home() {
 
   // Stats strip numbers
   const eliminated = stats.totalBrackets - stats.remaining;
+  const alivePercentage = formatAlivePercentage(stats.remaining, stats.totalBrackets);
   const biggestKill =
     exactImpacts.length > 0
       ? Math.max(...exactImpacts.map((i) => i.eliminated ?? 0))
@@ -298,6 +307,14 @@ export default function Home() {
                 </p>
                 <p className="text-xs text-white/40 mt-1 uppercase tracking-wide">
                   brackets eliminated
+                </p>
+              </div>
+              <div className="flex-1 min-w-[140px] px-6 py-2 text-center">
+                <p className="text-3xl sm:text-4xl font-bold tabular-nums text-white">
+                  {alivePercentage}
+                </p>
+                <p className="text-xs text-white/40 mt-1 uppercase tracking-wide">
+                  brackets still alive
                 </p>
               </div>
               {biggestKill != null && (
