@@ -18,9 +18,7 @@ rollback. For live tournament operations, use
 Suggested verification:
 
 ```bash
-export ADMIN_BASE_URL='https://brackets.willjsmart.com'
-export ADMIN_TOKEN='replace-me'
-
+source .env.ops
 make ops-status
 make ops-audit LIMIT=10
 ```
@@ -28,9 +26,8 @@ make ops-audit LIMIT=10
 If you need a local-only check on the host:
 
 ```bash
+source .env.ops
 export ADMIN_BASE_URL='http://127.0.0.1:3000'
-export ADMIN_TOKEN='replace-me'
-
 make ops-status
 ```
 

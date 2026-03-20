@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit
 
 install:
 	npm install
@@ -68,19 +68,17 @@ refresh-loop:
 	bash scripts/ops/refresh_loop.sh
 
 ops-status:
-	bash scripts/ops/admin.sh status
+	curl -s $(ADMIN_BASE_URL)/api/stats | jq .
 
 ops-refresh:
-	bash scripts/ops/admin.sh refresh
+	curl -s -X POST $(ADMIN_BASE_URL)/api/refresh \
+	  -H "Authorization: Bearer $(ADMIN_TOKEN)" | jq .
 
 ops-refresh-no-espn:
-	bash scripts/ops/admin.sh refresh-no-espn
+	curl -s -X POST "$(ADMIN_BASE_URL)/api/refresh?espn=false" \
+	  -H "Authorization: Bearer $(ADMIN_TOKEN)" | jq .
 
 ops-audit:
-	bash scripts/ops/admin.sh audit "$(LIMIT)"
+	curl -s "$(ADMIN_BASE_URL)/api/audit?limit=$(or $(LIMIT),20)" \
+	  -H "Authorization: Bearer $(ADMIN_TOKEN)" | jq .
 
-ops-result:
-	bash scripts/ops/admin.sh result "$(ACTION)" "$(GAME)" "$(ROUND)" "$(TEAM1)" "$(TEAM2)" "$(WINNER)"
-
-ops-db:
-	bash scripts/ops/db.sh summary
