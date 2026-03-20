@@ -457,9 +457,7 @@ function applyPlayInWinnerIfNeeded(
   if (
     currentRoundOf64Result?.round === 64 &&
     currentRoundOf64Result.team1 === slot.roundOf64Team1 &&
-    currentRoundOf64Result.team2 === winningTeam.name &&
-    currentRoundOf64Result.source === "play_in" &&
-    currentRoundOf64Result.manual_override === 0
+    currentRoundOf64Result.team2 === winningTeam.name
   ) {
     return { handled: true };
   }
