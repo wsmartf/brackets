@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
 
 install:
 	npm install
@@ -26,6 +26,12 @@ collision-stats:
 
 collision-stats-smoke:
 	COLLISION_NUM_BRACKETS=10000 npm run collision-stats
+
+bracket-stats:
+	npm run bracket-stats
+
+bracket-stats-smoke:
+	BRACKET_STATS_NUM_BRACKETS=10000 npm run bracket-stats
 
 backtest-current-model:
 	python3 scripts/model/backtest_current_model.py

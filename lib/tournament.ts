@@ -116,7 +116,7 @@ let _cachedTournament: Tournament | null = null;
 let _cachedMatchupProbabilityTable: number[] | null = null;
 let _cachedInitialOrder: string[] | null = null;
 const PLAY_IN_TEAM_BY_NAME: Record<string, Team> = {
-  Howard: {
+  "Howard": {
     name: "Howard",
     seed: 16,
     region: "Midwest",
@@ -138,7 +138,7 @@ const PLAY_IN_TEAM_BY_NAME: Record<string, Team> = {
     adjTempo: 69.1,
     scheduleNetRating: 11.99,
   },
-  Lehigh: {
+  "Lehigh": {
     name: "Lehigh",
     seed: 16,
     region: "South",

@@ -1,0 +1,1128 @@
+{
+  "generatedAt": "2026-03-19T20:32:57.217Z",
+  "startedAt": "2026-03-19T20:31:36.653Z",
+  "totalBrackets": 1000000000,
+  "durationSeconds": 80.56,
+  "perTeam": {
+    "Duke": {
+      "seed": 1,
+      "region": "East",
+      "roundCounts": {
+        "R64": 985420905,
+        "R32": 818904549,
+        "S16": 642867682,
+        "E8": 494145109,
+        "F4": 317201641,
+        "Champion": 197778513
+      }
+    },
+    "Siena": {
+      "seed": 16,
+      "region": "East",
+      "roundCounts": {
+        "R64": 14579095,
+        "R32": 991098,
+        "S16": 56325,
+        "E8": 2711,
+        "F4": 82,
+        "Champion": 1
+      }
+    },
+    "Ohio State": {
+      "seed": 8,
+      "region": "East",
+      "roundCounts": {
+        "R64": 602981425,
+        "R32": 123119490,
+        "S16": 57298557,
+        "E8": 25206764,
+        "F4": 7983590,
+        "Champion": 2313817
+      }
+    },
+    "TCU": {
+      "seed": 9,
+      "region": "East",
+      "roundCounts": {
+        "R64": 397018575,
+        "R32": 56984863,
+        "S16": 20516388,
+        "E8": 6876622,
+        "F4": 1601737,
+        "Champion": 333647
+      }
+    },
+    "St. John's": {
+      "seed": 5,
+      "region": "East",
+      "roundCounts": {
+        "R64": 799011114,
+        "R32": 441177377,
+        "S16": 132057352,
+        "E8": 65638002,
+        "F4": 23968553,
+        "Champion": 8102183
+      }
+    },
+    "Northern Iowa": {
+      "seed": 12,
+      "region": "East",
+      "roundCounts": {
+        "R64": 200988886,
+        "R32": 51086414,
+        "S16": 5390961,
+        "E8": 1067290,
+        "F4": 141461,
+        "Champion": 16364
+      }
+    },
+    "Kansas": {
+      "seed": 4,
+      "region": "East",
+      "roundCounts": {
+        "R64": 877811007,
+        "R32": 487797126,
+        "S16": 140611428,
+        "E8": 67865836,
+        "F4": 23931263,
+        "Champion": 7787093
+      }
+    },
+    "Cal Baptist": {
+      "seed": 13,
+      "region": "East",
+      "roundCounts": {
+        "R64": 122188993,
+        "R32": 19939083,
+        "S16": 1201307,
+        "E8": 138439,
+        "F4": 10359,
+        "Champion": 661
+      }
+    },
+    "Louisville": {
+      "seed": 6,
+      "region": "East",
+      "roundCounts": {
+        "R64": 713264617,
+        "R32": 345577988,
+        "S16": 185708218,
+        "E8": 63579430,
+        "F4": 23239943,
+        "Champion": 7864692
+      }
+    },
+    "South Florida": {
+      "seed": 11,
+      "region": "East",
+      "roundCounts": {
+        "R64": 286735383,
+        "R32": 81358541,
+        "S16": 25770625,
+        "E8": 4651716,
+        "F4": 895520,
+        "Champion": 152885
+      }
+    },
+    "Michigan State": {
+      "seed": 3,
+      "region": "East",
+      "roundCounts": {
+        "R64": 915973740,
+        "R32": 561817342,
+        "S16": 326268752,
+        "E8": 123913296,
+        "F4": 50173428,
+        "Champion": 18959984
+      }
+    },
+    "North Dakota State": {
+      "seed": 14,
+      "region": "East",
+      "roundCounts": {
+        "R64": 84026260,
+        "R32": 11246129,
+        "S16": 1310636,
+        "E8": 79679,
+        "F4": 4974,
+        "Champion": 241
+      }
+    },
+    "UCLA": {
+      "seed": 7,
+      "region": "East",
+      "roundCounts": {
+        "R64": 621434863,
+        "R32": 255988892,
+        "S16": 105147700,
+        "E8": 28076730,
+        "F4": 8010964,
+        "Champion": 2076453
+      }
+    },
+    "UCF": {
+      "seed": 10,
+      "region": "East",
+      "roundCounts": {
+        "R64": 378565137,
+        "R32": 113346378,
+        "S16": 33387166,
+        "E8": 6118944,
+        "F4": 1197797,
+        "Champion": 206666
+      }
+    },
+    "UConn": {
+      "seed": 2,
+      "region": "East",
+      "roundCounts": {
+        "R64": 950963138,
+        "R32": 626213920,
+        "S16": 322161920,
+        "E8": 112631792,
+        "F4": 42046852,
+        "Champion": 14555847
+      }
+    },
+    "Furman": {
+      "seed": 15,
+      "region": "East",
+      "roundCounts": {
+        "R64": 49036862,
+        "R32": 4450810,
+        "S16": 244983,
+        "E8": 7640,
+        "F4": 264,
+        "Champion": 11
+      }
+    },
+    "Arizona": {
+      "seed": 1,
+      "region": "West",
+      "roundCounts": {
+        "R64": 986625385,
+        "R32": 822500037,
+        "S16": 638252312,
+        "E8": 463594273,
+        "F4": 289526127,
+        "Champion": 173636048
+      }
+    },
+    "LIU": {
+      "seed": 16,
+      "region": "West",
+      "roundCounts": {
+        "R64": 13374615,
+        "R32": 824425,
+        "S16": 41872,
+        "E8": 1572,
+        "F4": 46,
+        "Champion": 3
+      }
+    },
+    "Villanova": {
+      "seed": 8,
+      "region": "West",
+      "roundCounts": {
+        "R64": 479467016,
+        "R32": 83105500,
+        "S16": 33527935,
+        "E8": 11578557,
+        "F4": 3085885,
+        "Champion": 717232
+      }
+    },
+    "Utah State": {
+      "seed": 9,
+      "region": "West",
+      "roundCounts": {
+        "R64": 520532984,
+        "R32": 93570038,
+        "S16": 38758992,
+        "E8": 13785942,
+        "F4": 3792128,
+        "Champion": 911619
+      }
+    },
+    "Wisconsin": {
+      "seed": 5,
+      "region": "West",
+      "roundCounts": {
+        "R64": 860505229,
+        "R32": 407686155,
+        "S16": 110372690,
+        "E8": 45167379,
+        "F4": 14461747,
+        "Champion": 4107053
+      }
+    },
+    "High Point": {
+      "seed": 12,
+      "region": "West",
+      "roundCounts": {
+        "R64": 139494771,
+        "R32": 20465624,
+        "S16": 1292700,
+        "E8": 131998,
+        "F4": 9848,
+        "Champion": 621
+      }
+    },
+    "Arkansas": {
+      "seed": 4,
+      "region": "West",
+      "roundCounts": {
+        "R64": 887128349,
+        "R32": 549889403,
+        "S16": 176335925,
+        "E8": 83321202,
+        "F4": 31278449,
+        "Champion": 10593036
+      }
+    },
+    "Hawaii": {
+      "seed": 13,
+      "region": "West",
+      "roundCounts": {
+        "R64": 112871651,
+        "R32": 21958818,
+        "S16": 1417574,
+        "E8": 149169,
+        "F4": 11639,
+        "Champion": 708
+      }
+    },
+    "BYU": {
+      "seed": 6,
+      "region": "West",
+      "roundCounts": {
+        "R64": 545955838,
+        "R32": 264622055,
+        "S16": 108748250,
+        "E8": 34872340,
+        "F4": 11587827,
+        "Champion": 3428808
+      }
+    },
+    "Texas": {
+      "seed": 11,
+      "region": "West",
+      "roundCounts": {
+        "R64": 454044162,
+        "R32": 196918800,
+        "S16": 71358456,
+        "E8": 19898725,
+        "F4": 5753336,
+        "Champion": 1461080
+      }
+    },
+    "Gonzaga": {
+      "seed": 3,
+      "region": "West",
+      "roundCounts": {
+        "R64": 926707172,
+        "R32": 531596971,
+        "S16": 238219904,
+        "E8": 84188359,
+        "F4": 30808374,
+        "Champion": 10143743
+      }
+    },
+    "Kennesaw State": {
+      "seed": 14,
+      "region": "West",
+      "roundCounts": {
+        "R64": 73292828,
+        "R32": 6862174,
+        "S16": 458900,
+        "E8": 21513,
+        "F4": 1000,
+        "Champion": 34
+      }
+    },
+    "Miami FL": {
+      "seed": 7,
+      "region": "West",
+      "roundCounts": {
+        "R64": 569910621,
+        "R32": 159824747,
+        "S16": 65068709,
+        "E8": 16259820,
+        "F4": 4213367,
+        "Champion": 948603
+      }
+    },
+    "Missouri": {
+      "seed": 10,
+      "region": "West",
+      "roundCounts": {
+        "R64": 430089379,
+        "R32": 96976781,
+        "S16": 32407969,
+        "E8": 6466166,
+        "F4": 1336489,
+        "Champion": 235926
+      }
+    },
+    "Purdue": {
+      "seed": 2,
+      "region": "West",
+      "roundCounts": {
+        "R64": 965637400,
+        "R32": 739673512,
+        "S16": 483513610,
+        "E8": 220555092,
+        "F4": 103725015,
+        "Champion": 45223478
+      }
+    },
+    "Queens": {
+      "seed": 15,
+      "region": "West",
+      "roundCounts": {
+        "R64": 34362600,
+        "R32": 3524960,
+        "S16": 224202,
+        "E8": 7893,
+        "F4": 295,
+        "Champion": 6
+      }
+    },
+    "Michigan": {
+      "seed": 1,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 987485782,
+        "R32": 846050396,
+        "S16": 653065678,
+        "E8": 464498969,
+        "F4": 304475727,
+        "Champion": 184033947
+      }
+    },
+    "Howard": {
+      "seed": 16,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 12514218,
+        "R32": 881886,
+        "S16": 40960,
+        "E8": 1364,
+        "F4": 36,
+        "Champion": 0
+      }
+    },
+    "Georgia": {
+      "seed": 8,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 596928718,
+        "R32": 103466415,
+        "S16": 41411930,
+        "E8": 13555297,
+        "F4": 3713331,
+        "Champion": 910988
+      }
+    },
+    "Saint Louis": {
+      "seed": 9,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 403071282,
+        "R32": 49601303,
+        "S16": 15241908,
+        "E8": 3703360,
+        "F4": 738474,
+        "Champion": 131966
+      }
+    },
+    "Texas Tech": {
+      "seed": 5,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 810055990,
+        "R32": 439258665,
+        "S16": 133930539,
+        "E8": 58591683,
+        "F4": 22009415,
+        "Champion": 7429871
+      }
+    },
+    "Akron": {
+      "seed": 12,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 189944010,
+        "R32": 44534802,
+        "S16": 4636254,
+        "E8": 716652,
+        "F4": 89562,
+        "Champion": 10058
+      }
+    },
+    "Alabama": {
+      "seed": 4,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 843095192,
+        "R32": 482382048,
+        "S16": 148722895,
+        "E8": 65678207,
+        "F4": 24934326,
+        "Champion": 8511092
+      }
+    },
+    "Hofstra": {
+      "seed": 13,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 156904808,
+        "R32": 33824485,
+        "S16": 2949836,
+        "E8": 380538,
+        "F4": 39388,
+        "Champion": 3604
+      }
+    },
+    "Tennessee": {
+      "seed": 6,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 898339763,
+        "R32": 522506660,
+        "S16": 240006996,
+        "E8": 89764543,
+        "F4": 36766700,
+        "Champion": 13547502
+      }
+    },
+    "Miami OH": {
+      "seed": 11,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 101660237,
+        "R32": 16073438,
+        "S16": 1490875,
+        "E8": 106106,
+        "F4": 7834,
+        "Champion": 524
+      }
+    },
+    "Virginia": {
+      "seed": 3,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 917126734,
+        "R32": 453122926,
+        "S16": 183328266,
+        "E8": 59727294,
+        "F4": 21253022,
+        "Champion": 6797210
+      }
+    },
+    "Wright State": {
+      "seed": 14,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 82873266,
+        "R32": 8296976,
+        "S16": 510140,
+        "E8": 24158,
+        "F4": 1200,
+        "Champion": 56
+      }
+    },
+    "Kentucky": {
+      "seed": 7,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 582812370,
+        "R32": 185860589,
+        "S16": 82963213,
+        "E8": 24311860,
+        "F4": 7760407,
+        "Champion": 2223306
+      }
+    },
+    "Santa Clara": {
+      "seed": 10,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 417187630,
+        "R32": 103725264,
+        "S16": 37337170,
+        "E8": 8534047,
+        "F4": 2106028,
+        "Champion": 466037
+      }
+    },
+    "Iowa State": {
+      "seed": 2,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 970821491,
+        "R32": 708253615,
+        "S16": 454244720,
+        "E8": 210402221,
+        "F4": 106643894,
+        "Champion": 48993343
+      }
+    },
+    "Tennessee State": {
+      "seed": 15,
+      "region": "Midwest",
+      "roundCounts": {
+        "R64": 29178509,
+        "R32": 2160532,
+        "S16": 118620,
+        "E8": 3701,
+        "F4": 105,
+        "Champion": 1
+      }
+    },
+    "Florida": {
+      "seed": 1,
+      "region": "South",
+      "roundCounts": {
+        "R64": 990096943,
+        "R32": 736232344,
+        "S16": 486441322,
+        "E8": 275430603,
+        "F4": 146007641,
+        "Champion": 73806093
+      }
+    },
+    "Prairie View A&M": {
+      "seed": 16,
+      "region": "South",
+      "roundCounts": {
+        "R64": 9903057,
+        "R32": 277783,
+        "S16": 5671,
+        "E8": 85,
+        "F4": 1,
+        "Champion": 0
+      }
+    },
+    "Clemson": {
+      "seed": 8,
+      "region": "South",
+      "roundCounts": {
+        "R64": 396383579,
+        "R32": 87423051,
+        "S16": 30135034,
+        "E8": 8015831,
+        "F4": 1955983,
+        "Champion": 444658
+      }
+    },
+    "Iowa": {
+      "seed": 9,
+      "region": "South",
+      "roundCounts": {
+        "R64": 603616421,
+        "R32": 176066822,
+        "S16": 76264775,
+        "E8": 26190083,
+        "F4": 8299179,
+        "Champion": 2462584
+      }
+    },
+    "Vanderbilt": {
+      "seed": 5,
+      "region": "South",
+      "roundCounts": {
+        "R64": 834515097,
+        "R32": 481435783,
+        "S16": 214766034,
+        "E8": 93981717,
+        "F4": 38150537,
+        "Champion": 14616104
+      }
+    },
+    "McNeese": {
+      "seed": 12,
+      "region": "South",
+      "roundCounts": {
+        "R64": 165484903,
+        "R32": 38004832,
+        "S16": 5476259,
+        "E8": 757587,
+        "F4": 94987,
+        "Champion": 10933
+      }
+    },
+    "Nebraska": {
+      "seed": 4,
+      "region": "South",
+      "roundCounts": {
+        "R64": 927258293,
+        "R32": 474033161,
+        "S16": 186572416,
+        "E8": 71770968,
+        "F4": 25528024,
+        "Champion": 8535884
+      }
+    },
+    "Troy": {
+      "seed": 13,
+      "region": "South",
+      "roundCounts": {
+        "R64": 72741707,
+        "R32": 6526224,
+        "S16": 338489,
+        "E8": 16834,
+        "F4": 724,
+        "Champion": 34
+      }
+    },
+    "North Carolina": {
+      "seed": 6,
+      "region": "South",
+      "roundCounts": {
+        "R64": 577656122,
+        "R32": 161922520,
+        "S16": 47670216,
+        "E8": 14559838,
+        "F4": 3729986,
+        "Champion": 892386
+      }
+    },
+    "VCU": {
+      "seed": 11,
+      "region": "South",
+      "roundCounts": {
+        "R64": 422343878,
+        "R32": 93568565,
+        "S16": 21670222,
+        "E8": 5179684,
+        "F4": 1028113,
+        "Champion": 190145
+      }
+    },
+    "Illinois": {
+      "seed": 3,
+      "region": "South",
+      "roundCounts": {
+        "R64": 951501607,
+        "R32": 737362934,
+        "S16": 390401159,
+        "E8": 214418370,
+        "F4": 103163737,
+        "Champion": 47114371
+      }
+    },
+    "Penn": {
+      "seed": 14,
+      "region": "South",
+      "roundCounts": {
+        "R64": 48498393,
+        "R32": 7145981,
+        "S16": 441564,
+        "E8": 27457,
+        "F4": 1365,
+        "Champion": 70
+      }
+    },
+    "Saint Mary's": {
+      "seed": 7,
+      "region": "South",
+      "roundCounts": {
+        "R64": 523733315,
+        "R32": 144078795,
+        "S16": 52584963,
+        "E8": 17426338,
+        "F4": 4863283,
+        "Champion": 1268098
+      }
+    },
+    "Texas A&M": {
+      "seed": 10,
+      "region": "South",
+      "roundCounts": {
+        "R64": 476266685,
+        "R32": 120051782,
+        "S16": 40526188,
+        "E8": 12327726,
+        "F4": 3145176,
+        "Champion": 749196
+      }
+    },
+    "Houston": {
+      "seed": 2,
+      "region": "South",
+      "roundCounts": {
+        "R64": 956080294,
+        "R32": 730346555,
+        "S16": 446271094,
+        "E8": 259869094,
+        "F4": 133490384,
+        "Champion": 65292812
+      }
+    },
+    "Idaho": {
+      "seed": 15,
+      "region": "South",
+      "roundCounts": {
+        "R64": 43919706,
+        "R32": 5522868,
+        "S16": 434594,
+        "E8": 27785,
+        "F4": 1431,
+        "Champion": 71
+      }
+    }
+  },
+  "pickCounts": {
+    "0": {
+      "team1": "Duke",
+      "team2": "Siena",
+      "team2Picks": 14579095
+    },
+    "1": {
+      "team1": "Ohio State",
+      "team2": "TCU",
+      "team2Picks": 397018575
+    },
+    "2": {
+      "team1": "St. John's",
+      "team2": "Northern Iowa",
+      "team2Picks": 200988886
+    },
+    "3": {
+      "team1": "Kansas",
+      "team2": "Cal Baptist",
+      "team2Picks": 122188993
+    },
+    "4": {
+      "team1": "Louisville",
+      "team2": "South Florida",
+      "team2Picks": 286735383
+    },
+    "5": {
+      "team1": "Michigan State",
+      "team2": "North Dakota State",
+      "team2Picks": 84026260
+    },
+    "6": {
+      "team1": "UCLA",
+      "team2": "UCF",
+      "team2Picks": 378565137
+    },
+    "7": {
+      "team1": "UConn",
+      "team2": "Furman",
+      "team2Picks": 49036862
+    },
+    "8": {
+      "team1": "Arizona",
+      "team2": "LIU",
+      "team2Picks": 13374615
+    },
+    "9": {
+      "team1": "Villanova",
+      "team2": "Utah State",
+      "team2Picks": 520532984
+    },
+    "10": {
+      "team1": "Wisconsin",
+      "team2": "High Point",
+      "team2Picks": 139494771
+    },
+    "11": {
+      "team1": "Arkansas",
+      "team2": "Hawaii",
+      "team2Picks": 112871651
+    },
+    "12": {
+      "team1": "BYU",
+      "team2": "Texas",
+      "team2Picks": 454044162
+    },
+    "13": {
+      "team1": "Gonzaga",
+      "team2": "Kennesaw State",
+      "team2Picks": 73292828
+    },
+    "14": {
+      "team1": "Miami FL",
+      "team2": "Missouri",
+      "team2Picks": 430089379
+    },
+    "15": {
+      "team1": "Purdue",
+      "team2": "Queens",
+      "team2Picks": 34362600
+    },
+    "16": {
+      "team1": "Michigan",
+      "team2": "Howard",
+      "team2Picks": 12514218
+    },
+    "17": {
+      "team1": "Georgia",
+      "team2": "Saint Louis",
+      "team2Picks": 403071282
+    },
+    "18": {
+      "team1": "Texas Tech",
+      "team2": "Akron",
+      "team2Picks": 189944010
+    },
+    "19": {
+      "team1": "Alabama",
+      "team2": "Hofstra",
+      "team2Picks": 156904808
+    },
+    "20": {
+      "team1": "Tennessee",
+      "team2": "Miami OH",
+      "team2Picks": 101660237
+    },
+    "21": {
+      "team1": "Virginia",
+      "team2": "Wright State",
+      "team2Picks": 82873266
+    },
+    "22": {
+      "team1": "Kentucky",
+      "team2": "Santa Clara",
+      "team2Picks": 417187630
+    },
+    "23": {
+      "team1": "Iowa State",
+      "team2": "Tennessee State",
+      "team2Picks": 29178509
+    },
+    "24": {
+      "team1": "Florida",
+      "team2": "Prairie View A&M",
+      "team2Picks": 9903057
+    },
+    "25": {
+      "team1": "Clemson",
+      "team2": "Iowa",
+      "team2Picks": 603616421
+    },
+    "26": {
+      "team1": "Vanderbilt",
+      "team2": "McNeese",
+      "team2Picks": 165484903
+    },
+    "27": {
+      "team1": "Nebraska",
+      "team2": "Troy",
+      "team2Picks": 72741707
+    },
+    "28": {
+      "team1": "North Carolina",
+      "team2": "VCU",
+      "team2Picks": 422343878
+    },
+    "29": {
+      "team1": "Illinois",
+      "team2": "Penn",
+      "team2Picks": 48498393
+    },
+    "30": {
+      "team1": "Saint Mary's",
+      "team2": "Texas A&M",
+      "team2Picks": 476266685
+    },
+    "31": {
+      "team1": "Houston",
+      "team2": "Idaho",
+      "team2Picks": 43919706
+    },
+    "32": {
+      "team1": "Winner of Game 0",
+      "team2": "Winner of Game 1",
+      "team2Picks": 180104353
+    },
+    "33": {
+      "team1": "Winner of Game 2",
+      "team2": "Winner of Game 3",
+      "team2Picks": 507736209
+    },
+    "34": {
+      "team1": "Winner of Game 4",
+      "team2": "Winner of Game 5",
+      "team2Picks": 573063471
+    },
+    "35": {
+      "team1": "Winner of Game 6",
+      "team2": "Winner of Game 7",
+      "team2Picks": 630664730
+    },
+    "36": {
+      "team1": "Winner of Game 8",
+      "team2": "Winner of Game 9",
+      "team2Picks": 176675538
+    },
+    "37": {
+      "team1": "Winner of Game 10",
+      "team2": "Winner of Game 11",
+      "team2Picks": 571848221
+    },
+    "38": {
+      "team1": "Winner of Game 12",
+      "team2": "Winner of Game 13",
+      "team2Picks": 538459145
+    },
+    "39": {
+      "team1": "Winner of Game 14",
+      "team2": "Winner of Game 15",
+      "team2Picks": 743198472
+    },
+    "40": {
+      "team1": "Winner of Game 16",
+      "team2": "Winner of Game 17",
+      "team2Picks": 153067718
+    },
+    "41": {
+      "team1": "Winner of Game 18",
+      "team2": "Winner of Game 19",
+      "team2Picks": 516206533
+    },
+    "42": {
+      "team1": "Winner of Game 20",
+      "team2": "Winner of Game 21",
+      "team2Picks": 461419902
+    },
+    "43": {
+      "team1": "Winner of Game 22",
+      "team2": "Winner of Game 23",
+      "team2Picks": 710414147
+    },
+    "44": {
+      "team1": "Winner of Game 24",
+      "team2": "Winner of Game 25",
+      "team2Picks": 263489873
+    },
+    "45": {
+      "team1": "Winner of Game 26",
+      "team2": "Winner of Game 27",
+      "team2Picks": 480559385
+    },
+    "46": {
+      "team1": "Winner of Game 28",
+      "team2": "Winner of Game 29",
+      "team2Picks": 744508915
+    },
+    "47": {
+      "team1": "Winner of Game 30",
+      "team2": "Winner of Game 31",
+      "team2Picks": 735869423
+    },
+    "48": {
+      "team1": "Winner of Game 32",
+      "team2": "Winner of Game 33",
+      "team2Picks": 279261048
+    },
+    "49": {
+      "team1": "Winner of Game 34",
+      "team2": "Winner of Game 35",
+      "team2Picks": 460941769
+    },
+    "50": {
+      "team1": "Winner of Game 36",
+      "team2": "Winner of Game 37",
+      "team2Picks": 289418889
+    },
+    "51": {
+      "team1": "Winner of Game 38",
+      "team2": "Winner of Game 39",
+      "team2Picks": 581214490
+    },
+    "52": {
+      "team1": "Winner of Game 40",
+      "team2": "Winner of Game 41",
+      "team2Picks": 290239524
+    },
+    "53": {
+      "team1": "Winner of Game 42",
+      "team2": "Winner of Game 43",
+      "team2Picks": 574663723
+    },
+    "54": {
+      "team1": "Winner of Game 44",
+      "team2": "Winner of Game 45",
+      "team2Picks": 407153198
+    },
+    "55": {
+      "team1": "Winner of Game 46",
+      "team2": "Winner of Game 47",
+      "team2Picks": 539816839
+    },
+    "56": {
+      "team1": "Winner of Game 48",
+      "team2": "Winner of Game 49",
+      "team2Picks": 339059227
+    },
+    "57": {
+      "team1": "Winner of Game 50",
+      "team2": "Winner of Game 51",
+      "team2Picks": 382269908
+    },
+    "58": {
+      "team1": "Winner of Game 52",
+      "team2": "Winner of Game 53",
+      "team2Picks": 392873930
+    },
+    "59": {
+      "team1": "Winner of Game 54",
+      "team2": "Winner of Game 55",
+      "team2Picks": 523836292
+    },
+    "60": {
+      "team1": "Winner of Game 56",
+      "team2": "Winner of Game 57",
+      "team2Picks": 499591572
+    },
+    "61": {
+      "team1": "Winner of Game 58",
+      "team2": "Winner of Game 59",
+      "team2Picks": 469460551
+    },
+    "62": {
+      "team1": "Winner of Game 60",
+      "team2": "Winner of Game 61",
+      "team2Picks": 488442944
+    }
+  },
+  "r1UpsetHistogram": {
+    "0": 254015,
+    "1": 2769437,
+    "2": 14051819,
+    "3": 44095861,
+    "4": 96052898,
+    "5": 154524813,
+    "6": 190762801,
+    "7": 185316284,
+    "8": 144198367,
+    "9": 91024531,
+    "10": 47062394,
+    "11": 20065322,
+    "12": 7095250,
+    "13": 2086815,
+    "14": 513159,
+    "15": 105369,
+    "16": 17871,
+    "17": 2640,
+    "18": 316,
+    "19": 35,
+    "20": 3,
+    "21": 0,
+    "22": 0,
+    "23": 0,
+    "24": 0,
+    "25": 0,
+    "26": 0,
+    "27": 0,
+    "28": 0,
+    "29": 0,
+    "30": 0,
+    "31": 0,
+    "32": 0
+  }
+}
