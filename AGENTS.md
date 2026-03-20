@@ -34,13 +34,6 @@ A task is done when:
 - the simplest useful verification has been run
 - docs are updated only if setup, workflow, public behavior, architecture constraints, operational procedure, or a durable decision changed
 
-## Commit Policy
-- When a task is complete and verified, create a local git commit.
-- Do not push commits unless explicitly asked.
-- Prefer one commit per meaningful task, not per tiny edit.
-- If a task needs human end-to-end verification before it should be considered done, stop after implementation, explain the exact verification steps, and wait before committing or continuing.
-- After human verification is confirmed, commit the finished task before starting the next one.
-
 ## Project Constraints
 - The app is self-hosted on a Mac and uses SQLite.
 - `GET /api/stats` is public.
