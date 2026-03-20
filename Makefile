@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-result ops-db
 
 install:
 	npm install
@@ -34,19 +34,25 @@ bracket-stats-smoke:
 	BRACKET_STATS_NUM_BRACKETS=10000 npm run bracket-stats
 
 backtest-current-model:
-	python3 scripts/model/backtest_current_model.py
+	uv run python scripts/backtest_current_model.py
 
 train-v2-model:
-	python3 scripts/model/train_v2_model.py
+	uv run python scripts/train_v2_model.py
 
 calibrate-v2:
-	python3 scripts/model/calibrate_v2.py
+	uv run python scripts/calibrate_v2.py
 
 calibrate-v2-holdout:
-	python3 scripts/model/calibrate_v2.py --holdout-only
+	uv run python scripts/calibrate_v2.py --holdout-only
 
 champion-probs:
-	python3 scripts/model/champion_probs.py
+	uv run python scripts/champion_probs.py
+
+bracket-stats-viz:
+	uv run python scripts/bracket_stats_viz.py
+
+uv-sync:
+	uv sync
 
 verify:
 	npm run typecheck
