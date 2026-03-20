@@ -19,6 +19,26 @@ Optional override when running directly on the server:
 export ADMIN_BASE_URL='http://127.0.0.1:3000'
 ```
 
+## Before Games Start
+1. Confirm the app is running under `pm2`.
+2. Confirm the Cloudflare Tunnel is running.
+3. Open `https://brackets.willjsmart.com`.
+4. Run a basic admin check:
+
+```bash
+make ops-status
+make ops-audit LIMIT=10
+make ops-espn-names
+```
+
+`make ops-espn-names` is the preflight check for ESPN naming drift. It fetches
+the current tournament scoreboard, lists the team names ESPN is using, and
+exits non-zero if any name does not map to a canonical bracket team. Keep this
+as a manual check for now. The live refresh loop already polls ESPN
+continuously, and unmatched finalized games now fail loudly during refresh, so
+adding a second scheduled job would add operational surface area without much
+benefit.
+
 ## Common Actions
 
 - Check current app state:
@@ -74,6 +94,22 @@ curl -s -X POST $ADMIN_BASE_URL/api/results \
   -H "Content-Type: application/json" \
   -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":null}' | jq .
 
+- Audit ESPN team names before tip-off or when ingest looks suspicious:
+
+```bash
+make ops-espn-names
+ESPN_AUDIT_DAYS_AHEAD=1 make ops-espn-names
+ESPN_AUDIT_DATES=20260320,20260321 make ops-espn-names
+```
+
+  Use this to catch scoreboard naming mismatches before games finish. The
+  command exits with a non-zero status if ESPN is using a team name that the
+  app cannot map to a canonical tournament team.
+
+- Manually set a result:
+
+```bash
+make ops-result ACTION=set GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena' WINNER='Duke'
 make ops-refresh-no-espn
 ```
 
@@ -96,6 +132,27 @@ The refresh loop calls `POST /api/refresh` every 60 seconds. Start it with pm2:
 ```bash
 source .env.ops
 pm2 start scripts/ops/refresh_loop.sh --name refresh-loop
+export REFRESH_INTERVAL_SECONDS=60
+
+make refresh-loop
+```
+
+The loop calls `POST /api/refresh` every 60 seconds.
+- `200` means ESPN found nothing new and cached analysis was already current.
+- `202` means new work was accepted and analysis started.
+- `502` means ESPN returned finalized tournament results that did not match a
+  canonical game cleanly. Valid queued results may still process, but you
+  should inspect `make ops-audit` and run `make ops-espn-names`.
+- `409` means the previous analysis is still running, so the loop tries again
+  on the next interval.
+
+If you want it supervised by `pm2`:
+
+```bash
+ADMIN_BASE_URL='https://brackets.willjsmart.com' \
+ADMIN_TOKEN='replace-me' \
+REFRESH_INTERVAL_SECONDS=60 \
+pm2 start ./scripts/ops/refresh_loop.sh --name march-madness-refresh --interpreter bash
 ```
 
 Useful commands:

@@ -71,6 +71,13 @@ async function runRefresh(espnSummary: {
   queued: number;
   skipped: number;
   finalResultsSeen: number;
+  blockingIssues: Array<{
+    reason: "team_mapping_failed" | "no_matching_game" | "winner_not_in_matchup";
+    espnResultId: string;
+    team1: string;
+    team2: string;
+    winner: string;
+  }>;
   error?: string;
 } | null): Promise<void> {
   try {
@@ -126,16 +133,39 @@ export async function POST(request: Request) {
     queued: number;
     skipped: number;
     finalResultsSeen: number;
+    blockingIssues: Array<{
+      reason: "team_mapping_failed" | "no_matching_game" | "winner_not_in_matchup";
+      espnResultId: string;
+      team1: string;
+      team2: string;
+      winner: string;
+    }>;
     error?: string;
   } | null = null;
 
   if (useEspn) {
     try {
       espnSummary = await fetchAndQueueEspnResults();
+      if (espnSummary.blockingIssues.length > 0) {
+        espnSummary.error = "ESPN sync found finalized results that did not match canonical games";
+        addAuditLog("espn_sync_failed", {
+          error: espnSummary.error,
+          blockingIssues: espnSummary.blockingIssues,
+          queued: espnSummary.queued,
+          skipped: espnSummary.skipped,
+          finalResultsSeen: espnSummary.finalResultsSeen,
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       addAuditLog("espn_fetch_failed", { error: message });
-      espnSummary = { queued: 0, skipped: 0, finalResultsSeen: 0, error: message };
+      espnSummary = {
+        queued: 0,
+        skipped: 0,
+        finalResultsSeen: 0,
+        blockingIssues: [],
+        error: message,
+      };
     }
   }
 
@@ -191,7 +221,9 @@ export async function POST(request: Request) {
     {
       ok: true,
       analysisStatus: getAnalysisStatus(),
+      espnSummary,
+      ...(espnSummary?.error ? { error: espnSummary.error } : {}),
     },
-    { status: 202 }
+    { status: espnSummary?.error ? 502 : 202 }
   );
 }

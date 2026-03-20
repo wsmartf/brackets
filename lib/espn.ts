@@ -214,6 +214,7 @@ export function extractResults(scoreboard: ESPNScoreboard): ESPNGameResult[] {
 }
 
 const ESPN_NAME_ALIASES: Record<string, string> = {
+  "long island": "LIU",
   "miami (oh)": "Miami OH",
   "miami oh": "Miami OH",
   "miami (fl)": "Miami FL",
@@ -228,13 +229,15 @@ const ESPN_NAME_ALIASES: Record<string, string> = {
   "michigan st": "Michigan State",
   "n dakota st": "North Dakota State",
   "kennesaw st": "Kennesaw State",
+  "wright st": "Wright State",
+  "tennessee st": "Tennessee State",
 };
 
 function normalizeTeamName(name: string): string {
   return name.toLowerCase().replace(/['’.]/g, "").replace(/\s+/g, " ").trim();
 }
 
-function mapEspnTeamName(name: string): string | null {
+export function mapEspnTeamName(name: string): string | null {
   const normalized = normalizeTeamName(name);
   const alias = ESPN_NAME_ALIASES[normalized];
   if (alias) {
@@ -289,6 +292,13 @@ export interface EspnSyncSummary {
   queued: number;
   skipped: number;
   finalResultsSeen: number;
+  blockingIssues: Array<{
+    reason: "team_mapping_failed" | "no_matching_game" | "winner_not_in_matchup";
+    espnResultId: string;
+    team1: string;
+    team2: string;
+    winner: string;
+  }>;
 }
 
 export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSummary> {
@@ -314,6 +324,7 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
   let gameDefinitions = buildCurrentGameDefinitions(results);
   let queued = 0;
   let skipped = 0;
+  const blockingIssues: EspnSyncSummary["blockingIssues"] = [];
 
   for (const espnResult of sortedResults) {
     const team1 = mapEspnTeamName(espnResult.team1);
@@ -325,6 +336,13 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
       addAuditLog("espn_result_skipped", {
         reason: "team_mapping_failed",
         espnResult,
+      });
+      blockingIssues.push({
+        reason: "team_mapping_failed",
+        espnResultId: espnResult.id,
+        team1: espnResult.team1,
+        team2: espnResult.team2,
+        winner: espnResult.winner,
       });
       continue;
     }
@@ -352,6 +370,13 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
         winner,
         espnResultId: espnResult.id,
       });
+      blockingIssues.push({
+        reason: "no_matching_game",
+        espnResultId: espnResult.id,
+        team1,
+        team2,
+        winner,
+      });
       continue;
     }
 
@@ -378,6 +403,13 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
       addAuditLog("espn_result_skipped", {
         reason: "winner_not_in_matchup",
         gameIndex: matchingGame.game_index,
+        team1: matchingGame.team1,
+        team2: matchingGame.team2,
+        winner,
+      });
+      blockingIssues.push({
+        reason: "winner_not_in_matchup",
+        espnResultId: espnResult.id,
         team1: matchingGame.team1,
         team2: matchingGame.team2,
         winner,
@@ -424,6 +456,7 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
     queued,
     skipped,
     finalResultsSeen: dedupedResults.size,
+    blockingIssues,
   };
 }
 
