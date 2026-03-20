@@ -225,6 +225,9 @@ const ESPN_NAME_ALIASES: Record<string, string> = {
   "saint mary's": "Saint Mary's",
   "prairie view": "Prairie View A&M",
   "texas a&m aggies": "Texas A&M",
+  "michigan st": "Michigan State",
+  "n dakota st": "North Dakota State",
+  "kennesaw st": "Kennesaw State",
 };
 
 function normalizeTeamName(name: string): string {
@@ -455,7 +458,6 @@ function applyPlayInWinnerIfNeeded(
     currentRoundOf64Result?.round === 64 &&
     currentRoundOf64Result.team1 === slot.roundOf64Team1 &&
     currentRoundOf64Result.team2 === winningTeam.name &&
-    currentRoundOf64Result.winner === null &&
     currentRoundOf64Result.source === "play_in" &&
     currentRoundOf64Result.manual_override === 0
   ) {
