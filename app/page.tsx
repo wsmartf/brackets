@@ -9,8 +9,8 @@
 
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
-import ProbabilityBars from "@/components/ProbabilityBars";
-import KillerLeaderboard from "@/components/KillerLeaderboard";
+import AnalysisCardSwitcher from "@/components/AnalysisCardSwitcher";
+import ByTheNumbers from "@/components/ByTheNumbers";
 import SiteNav from "@/components/SiteNav";
 import type { EliminationImpact } from "@/components/GameFeed";
 
@@ -332,21 +332,25 @@ export default function Home() {
         </section>
       )}
 
-      {/* Two-column section — only if data exists */}
+      {/* Analysis section — only if data exists */}
       {hasData && (
         <section className="px-6 py-12">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-            {/* Championship probs */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <ProbabilityBars
+          <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex-1 min-w-0">
+              <AnalysisCardSwitcher
                 probs={stats.championshipProbs ?? {}}
                 remaining={stats.remaining}
+                impacts={impacts}
+                results={results}
               />
             </div>
-
-            {/* Killer leaderboard */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <KillerLeaderboard impacts={impacts} results={results} />
+            <div className="w-full md:w-64 shrink-0">
+              <ByTheNumbers
+                probs={stats.championshipProbs ?? {}}
+                remaining={stats.remaining}
+                gamesCompleted={stats.gamesCompleted}
+                impacts={impacts}
+              />
             </div>
           </div>
         </section>
