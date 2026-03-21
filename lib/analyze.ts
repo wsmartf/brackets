@@ -42,7 +42,7 @@ function getEnvInt(name: string, fallback: number): number {
 
 export const NUM_BRACKETS = getEnvInt("ANALYZE_NUM_BRACKETS", 1_000_000_000);
 const NUM_WORKERS = getEnvInt("ANALYZE_NUM_WORKERS", Math.max(1, cpus().length - 1));
-const SURVIVOR_INDEX_THRESHOLD = getEnvInt("ANALYZE_INDEX_THRESHOLD", 10_000_000);
+const SURVIVOR_INDEX_THRESHOLD = getEnvInt("ANALYZE_INDEX_THRESHOLD", 1_000_000);
 
 // ============================================================
 // Types
@@ -93,6 +93,7 @@ function computeDerivedStats(
   survivorIndices: Array<{ index: number; championIndex: number }>
 ): { roundSurvivorCounts: RoundSurvivorCounts; gamePickCounts: GamePickCounts } {
   const initialOrder = getInitialOrder();
+  const teamIndex = new Map<string, number>(initialOrder.map((name, i) => [name, i]));
   // 7 rounds: R64(0), R32(1), S16(2), E8(3), F4(4), Championship(5), Champion(6)
   const NUM_ROUNDS = 7;
   const roundCounts: number[][] = Array.from({ length: initialOrder.length }, () =>
@@ -106,8 +107,8 @@ function computeDerivedStats(
       // Round number from the bracket encoding: 64, 32, 16, 8, 4, 2
       // Map to roundIndex: 64→0, 32→1, 16→2, 8→3, 4→4, 2→5; champion = 6
       const roundIndex = Math.round(Math.log2(64 / pick.round));
-      const team1Idx = initialOrder.indexOf(pick.team1);
-      const team2Idx = initialOrder.indexOf(pick.team2);
+      const team1Idx = teamIndex.get(pick.team1) ?? -1;
+      const team2Idx = teamIndex.get(pick.team2) ?? -1;
       const pickedTeam1 = pick.pick === pick.team1;
 
       // Track pick counts for this game
@@ -202,26 +203,8 @@ export async function runAnalysis(options: RunAnalysisOptions = {}): Promise<Ana
     survivorIndices: Array<{ index: number; championIndex: number }>;
   }>[] = [];
 
-  // Worker path resolution for Next.js:
-  //
-  // PROBLEM: Next.js compiles TypeScript, so we can't just point a Worker at worker.ts.
-  // The Worker constructor needs a path to a plain .js file at runtime.
-  //
-  // RECOMMENDED SOLUTION: Use tsx to run the worker with TypeScript support:
-  //   new Worker(workerPath, { execArgv: ['--import', 'tsx/esm'] })
-  // This requires: npm install -D tsx
-  //
-  // ALTERNATIVE: Pre-compile worker.ts to worker.js with tsc:
-  //   Add to package.json scripts: "build:worker": "tsc lib/worker.ts --outDir lib --module commonjs"
-  //   Then use: join(process.cwd(), "lib", "worker.js")
-  //
-  // ALTERNATIVE 2: Use the __filename trick in production:
-  //   When Next.js builds, it compiles everything to .next/server/
-  //   The worker.ts will be at .next/server/app/api/.../worker.js (unpredictable path)
-  //   This makes it hard to reference. Pre-compiling is cleaner.
-  //
-  // FOR NOW: Install tsx (npm install -D tsx) and use the execArgv approach.
-  // This works in both dev (next dev) and production (next start).
+  // Worker runs from lib/worker.mts via tsx/esm (execArgv below).
+  // This works in both dev and production without a separate compile step.
   const workerPath = join(process.cwd(), "lib", "worker.mts");
 
   for (let w = 0; w < NUM_WORKERS; w++) {

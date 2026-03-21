@@ -1,10 +1,13 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { createTestDb } from "./test-helpers";
+import { initDb, setResult } from "../lib/db";
 import {
   computeProbability,
   computeBitmasks,
   getBracketSurvivalState,
   buildGameDefinitions,
   getInitialOrder,
+  getPlayInOverrides,
   reconstructBracket,
   type Team,
   type BracketPick,
@@ -268,5 +271,58 @@ describe("reconstructBracket", () => {
     const picks = reconstructBracket(0);
     const rounds = [...new Set(picks.map((p) => p.round))].sort((a, b) => b - a);
     expect(rounds).toEqual([64, 32, 16, 8, 4, 2]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPlayInOverrides
+// ---------------------------------------------------------------------------
+
+describe("getPlayInOverrides", () => {
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    cleanup = createTestDb();
+    initDb();
+  });
+
+  afterEach(() => cleanup());
+
+  test("returns no override when team2 matches the placeholder exactly", () => {
+    // Force game 12's team2 to the placeholder "Texas" — means play-in not yet decided
+    setResult(12, 64, "Texas", "Texas", null, { source: "seed" });
+    const overrides = getPlayInOverrides();
+    expect(overrides["Texas"]).toBeUndefined();
+  });
+
+  test("returns Howard override when Howard wins play-in at game 12 (Midwest 16-seed slot)", () => {
+    // Game 12 is the Midwest 16-seed play-in slot; placeholder is "Texas".
+    // Howard is a known play-in team in PLAY_IN_TEAM_BY_NAME.
+    setResult(12, 64, "Texas", "Howard", "Howard", { source: "espn" });
+
+    const overrides = getPlayInOverrides();
+    expect(overrides["Texas"]).toBeDefined();
+    expect(overrides["Texas"].name).toBe("Howard");
+    expect(overrides["Texas"].seed).toBe(16);
+    expect(overrides["Texas"].region).toBe("Midwest");
+  });
+
+  test("returns no override for unknown play-in team not in PLAY_IN_TEAM_BY_NAME", () => {
+    // If some unexpected team name appears as team2, it has no entry in PLAY_IN_TEAM_BY_NAME
+    setResult(12, 64, "Texas", "SomeUnknownTeam", "SomeUnknownTeam", { source: "espn" });
+
+    const overrides = getPlayInOverrides();
+    expect(overrides["Texas"]).toBeUndefined();
+  });
+
+  test("returns multiple overrides when multiple play-in results are set", () => {
+    // Game 12 = Texas slot (Midwest 16-seed), Howard is a known play-in team there
+    // Game 16 = UMBC slot (South 16-seed), Lehigh is a known play-in team there
+    setResult(12, 64, "Texas", "Howard", "Howard", { source: "espn" });
+    setResult(16, 64, "UMBC", "Lehigh", "Lehigh", { source: "espn" });
+
+    const overrides = getPlayInOverrides();
+    expect(overrides["Texas"]?.name).toBe("Howard");
+    expect(overrides["UMBC"]?.name).toBe("Lehigh");
   });
 });

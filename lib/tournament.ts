@@ -188,10 +188,8 @@ export function resetTournamentCaches(): void {
   _cachedMatchupProbabilityTable = null;
 }
 
-function getTournamentTeams(): Team[] {
+function getTournamentTeams(overrides: Record<string, Team>): Team[] {
   const tournament = loadTournament();
-  const overrides = readPlayInRowOverrides();
-
   return tournament.teams.map((team) => overrides[team.name] ?? team);
 }
 
@@ -220,7 +218,7 @@ export function getInitialOrder(): string[] {
   }
 
   const tournament = loadTournament();
-  const teams = getTournamentTeams();
+  const teams = getTournamentTeams(getPlayInOverrides());
   const order: string[] = [];
 
   for (const region of tournament.regions) {
@@ -302,7 +300,7 @@ export function buildMatchupProbabilityTable(): number[] {
   }
 
   const initialOrder = getInitialOrder();
-  const teamsByName = new Map(getTournamentTeams().map((team) => [team.name, team]));
+  const teamsByName = new Map(getTournamentTeams(getPlayInOverrides()).map((team) => [team.name, team]));
   const table = new Array<number>(64 * 64).fill(0.5);
 
   for (let a = 0; a < initialOrder.length; a++) {
@@ -441,7 +439,7 @@ export function getBracketSurvivalState(
   };
 }
 
-function readPlayInRowOverrides(): Record<string, Team> {
+export function getPlayInOverrides(): Record<string, Team> {
   const dbPath = getDatabasePath();
 
   try {
