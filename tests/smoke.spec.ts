@@ -68,6 +68,28 @@ test.describe("GET /api/bracket/[id]", () => {
   });
 });
 
+test.describe("GET /api/survivors", () => {
+  test("returns valid JSON with expected shape", async ({ request }) => {
+    const response = await request.get("/api/survivors?limit=5");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.indices)).toBe(true);
+    expect(typeof data.total).toBe("number");
+    expect(data.total).toBeGreaterThanOrEqual(0);
+    const indices = data.indices as unknown[];
+    expect(indices.length).toBeLessThanOrEqual(5);
+    if (indices.length > 0) {
+      expect(typeof indices[0]).toBe("number");
+    }
+  });
+
+  test("unknown champion returns 400", async ({ request }) => {
+    const response = await request.get("/api/survivors?champion=NotATeam");
+    expect(response.status()).toBe(400);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Page load smoke tests
 // ---------------------------------------------------------------------------

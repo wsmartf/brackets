@@ -16,12 +16,13 @@
  *     maskHi: number,
  *     valueLo: number,
  *     valueHi: number,
- *     numTeams: number,          // 64 (for champion index mapping)
+ *     collectIndices: boolean,   // if true, collect surviving {index, championIndex} pairs
  *   }
  *
  *   Worker → Main: {
  *     remaining: number,
  *     championCounts: number[],  // length 64, counts per team index
+ *     survivorIndices: Array<{ index: number; championIndex: number }>,
  *   }
  */
 
@@ -40,6 +41,7 @@ if (parentPort) {
       maskHi,
       valueLo,
       valueHi,
+      collectIndices,
     } = msg as {
       startIndex: number;
       endIndex: number;
@@ -48,10 +50,12 @@ if (parentPort) {
       maskHi: number;
       valueLo: number;
       valueHi: number;
+      collectIndices: boolean;
     };
 
     let remaining = 0;
     const championCounts = new Array<number>(64).fill(0);
+    const survivorIndices: Array<{ index: number; championIndex: number }> = [];
     const currentRound = new Uint8Array(64);
     const nextRound = new Uint8Array(64);
 
@@ -127,8 +131,11 @@ if (parentPort) {
 
       remaining++;
       championCounts[currentRound[0]]++;
+      if (collectIndices) {
+        survivorIndices.push({ index, championIndex: currentRound[0] });
+      }
     }
 
-    parentPort!.postMessage({ remaining, championCounts });
+    parentPort!.postMessage({ remaining, championCounts, survivorIndices });
   });
 }

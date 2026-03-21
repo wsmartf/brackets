@@ -182,6 +182,13 @@ function initSchema(db: Database.Database): void {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_result_events_pending_game_winner
     ON result_events (game_index, winner)
     WHERE processed_at IS NULL;
+
+    CREATE TABLE IF NOT EXISTS surviving_indices (
+      idx INTEGER NOT NULL,
+      champion_index INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_surviving_champion
+    ON surviving_indices (champion_index);
   `);
 
   ensureColumn(db, "results", "source", "TEXT NOT NULL DEFAULT 'seed'");
@@ -602,6 +609,80 @@ export function markResultEventProcessed(id: number): void {
      SET processed_at = datetime('now')
      WHERE id = ?`
   ).run(id);
+}
+
+// ============================================================
+// Surviving Indices
+// ============================================================
+
+/**
+ * Atomically replace all surviving indices.
+ * Single transaction: delete all + bulk insert.
+ */
+export function replaceSurvivingIndices(
+  indices: Array<{ index: number; championIndex: number }>
+): void {
+  initDb();
+  const db = getDb();
+  const tx = db.transaction(() => {
+    db.prepare("DELETE FROM surviving_indices").run();
+    const insert = db.prepare(
+      "INSERT INTO surviving_indices (idx, champion_index) VALUES (?, ?)"
+    );
+    // Batch in chunks to avoid SQLite variable limits
+    for (const { index, championIndex } of indices) {
+      insert.run(index, championIndex);
+    }
+  });
+  tx();
+}
+
+/**
+ * Get surviving bracket indices, optionally filtered by champion team index.
+ */
+export function getSurvivorIndices(options: {
+  championIndex?: number;
+  limit?: number;
+} = {}): number[] {
+  initDb();
+  const db = getDb();
+  const limit = options.limit ?? 50;
+
+  if (options.championIndex !== undefined) {
+    const rows = db
+      .prepare(
+        "SELECT idx FROM surviving_indices WHERE champion_index = ? LIMIT ?"
+      )
+      .all(options.championIndex, limit) as Array<{ idx: number }>;
+    return rows.map((r) => r.idx);
+  }
+
+  const rows = db
+    .prepare("SELECT idx FROM surviving_indices LIMIT ?")
+    .all(limit) as Array<{ idx: number }>;
+  return rows.map((r) => r.idx);
+}
+
+/**
+ * Count surviving indices, optionally filtered by champion team index.
+ */
+export function getSurvivorCount(championIndex?: number): number {
+  initDb();
+  const db = getDb();
+
+  if (championIndex !== undefined) {
+    const row = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM surviving_indices WHERE champion_index = ?"
+      )
+      .get(championIndex) as { count: number };
+    return row.count;
+  }
+
+  const row = db
+    .prepare("SELECT COUNT(*) as count FROM surviving_indices")
+    .get() as { count: number };
+  return row.count;
 }
 
 export function getEliminationImpact(): EliminationImpact[] {
