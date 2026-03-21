@@ -183,6 +183,7 @@ export function loadTournament(): Tournament {
 }
 
 export function resetTournamentCaches(): void {
+  _cachedTournament = null;
   _cachedInitialOrder = null;
   _cachedMatchupProbabilityTable = null;
 }

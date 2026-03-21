@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "analyze": "node --require tsx/cjs scripts/analysis/analyze.cjs",
     "collision-stats": "node --require tsx/cjs scripts/analysis/collision-stats.cjs",
     "bracket-stats": "node --require tsx/cjs scripts/bracket-stats.cjs"
@@ -19,6 +21,8 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "vitest": "^3.1.1",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",

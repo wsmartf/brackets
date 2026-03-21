@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit
+.PHONY: install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit test test-watch test-ui test-ui-headed test-ui-update test-all
 
 install:
 	npm install
@@ -58,6 +58,19 @@ verify:
 	npm run typecheck
 	npm run lint
 
+# Unit + integration tests (fast, no server needed)
+test:
+	npm test
+
+# Unit tests in watch mode (for development)
+test-watch:
+	npm run test:watch
+
+# All tests: unit/integration + e2e
+test-all:
+	npm test
+	npx playwright test
+
 replay-stub:
 	node scripts/analysis/espn_stub.mjs
 
@@ -82,3 +95,11 @@ ops-audit:
 	curl -s "$(ADMIN_BASE_URL)/api/audit?limit=$(or $(LIMIT),20)" \
 	  -H "Authorization: Bearer $(ADMIN_TOKEN)" | jq .
 
+test-ui:
+	npx playwright test
+
+test-ui-headed:
+	npx playwright test --headed
+
+test-ui-update:
+	npx playwright test --update-snapshots

@@ -210,6 +210,17 @@ export function initDb(): void {
   ensureResultsSeeded();
 }
 
+/**
+ * Close the database connection and reset the singleton.
+ * Used in tests to ensure each test starts with a clean DB.
+ */
+export function closeDb(): void {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+}
+
 // ============================================================
 // Results CRUD
 // ============================================================
