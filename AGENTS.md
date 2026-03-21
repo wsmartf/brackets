@@ -9,6 +9,15 @@ This repo is a small, time-sensitive Next.js app for analyzing 1 billion determi
 - Keep manual override paths available even when automation exists.
 - Preserve cached stats if refresh or ESPN fetch fails.
 
+## Default Agent Loop
+1. Read `AGENTS.md` before starting work.
+2. If the task will span multiple meaningful steps or sessions, create or update a file in `tasks/` using `tasks/TEMPLATE.md`.
+3. Prefer `Makefile` commands and repo scripts over ad hoc shell when both cover the same job.
+4. Run the smallest verification layer that covers the change.
+5. For UI or route changes, run `make test-ui` or a targeted Playwright spec after `make test`.
+6. Keep local manual paths available. Direct `sqlite3`, local `curl`, and one-off inspection commands are acceptable when they are the clearest way to debug or repair local state.
+7. Do not touch remote or production systems unless the user explicitly asks.
+
 ## Standard Commands
 - `make dev` — run the site locally
 - `make verify` — run typecheck and lint
@@ -137,5 +146,7 @@ For work spanning multiple sessions or more than about 5 meaningful steps, creat
 - current status
 - next steps
 - affected files
+
+Use `tasks/TEMPLATE.md` for the exact shape.
 
 Archive or delete task docs when they stop being useful.

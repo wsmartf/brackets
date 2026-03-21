@@ -1,4 +1,4 @@
-# 18 — Store Surviving Indices
+# 01 — Store Surviving Indices
 
 **Do this now — we're down to ~30K brackets (~120KB to store).**
 
@@ -49,6 +49,16 @@ function replaceSurvivingIndices(
 - `GET /api/survivors?champion=Duke` returns correct indices
 - Transaction is atomic
 - No meaningful regression to analysis runtime
+
+## Current Status
+- Status: In progress
+- Last updated: 2026-03-21
+- Notes:
+  - Surviving-index persistence work is partially implemented in the repo.
+
+## Next Steps
+- Verify DB writes and API behavior end to end.
+- Confirm counts match the cached analysis blob after a smoke analysis run.
 
 ## Affected Files
 - `lib/worker.mts`

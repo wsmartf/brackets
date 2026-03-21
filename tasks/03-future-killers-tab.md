@@ -1,8 +1,7 @@
-# 20 — Future Killers Tab
+# 03 — Future Killers Tab
 
 ## Depends on
-- Task 18 (store surviving indices)
-- Task 15 (analysis card switcher shell — tab already exists as placeholder)
+- Task 01 (store surviving indices)
 
 ## Goal
 Replace the Future Killers tab placeholder with real content: upcoming games ranked

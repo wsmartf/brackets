@@ -22,11 +22,10 @@ make collision-stats
 make backtest-current-model
 make train-v2-model
 make ops-status
+make ops-espn-names
 make ops-refresh
 make ops-refresh-no-espn
 make ops-audit
-make ops-result
-make ops-db
 ```
 
 ## Requirements
@@ -41,12 +40,10 @@ make dev
 
 Open `http://localhost:3000`.
 
-To use admin routes locally, set an admin token first:
+To use admin routes locally, start from the committed example:
 
 ```bash
-cat > .env.local <<'EOF'
-ADMIN_TOKEN=replace-me
-EOF
+cp .env.example .env.local
 ```
 
 ## Validation
@@ -193,27 +190,34 @@ export ADMIN_TOKEN='replace-me'
 
 ```bash
 make ops-status
+make ops-espn-names
 make ops-refresh
 make ops-refresh-no-espn
 make ops-audit
-make ops-db
 ```
 
-Set or clear a result without retyping the JSON by hand:
+Set or clear a result:
 
 ```bash
-make ops-result ACTION=set GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena' WINNER='Duke'
-make ops-result ACTION=clear GAME=0 ROUND=64 TEAM1='Duke' TEAM2='Siena'
+curl -X POST "$ADMIN_BASE_URL/api/results" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":"Duke"}'
+
+curl -X POST "$ADMIN_BASE_URL/api/results" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"game_index":0,"round":64,"team1":"Duke","team2":"Siena","winner":null}'
 ```
 
-`make ops-db` reads from `DB_PATH`, then `MARCH_MADNESS_DB_PATH`, then the
-default `march-madness.db`.
+For ad hoc local DB inspection or repair, use direct `sqlite3` against
+`MARCH_MADNESS_DB_PATH` or the default `march-madness.db`.
 
 ## Data And Runtime State
 - Static tournament input: [data/tournament-2026.json](/Users/willsmart/dev/brackets/data/tournament-2026.json)
 - Runtime DB: `march-madness.db`
 - Analysis engine: [lib/analyze.ts](/Users/willsmart/dev/brackets/lib/analyze.ts)
-- Worker hot loop: [lib/worker.ts](/Users/willsmart/dev/brackets/lib/worker.ts)
+- Worker hot loop: [lib/worker.mts](/Users/willsmart/dev/brackets/lib/worker.mts)
 - Tournament/model logic: [lib/tournament.ts](/Users/willsmart/dev/brackets/lib/tournament.ts)
 
 ## Deployment
