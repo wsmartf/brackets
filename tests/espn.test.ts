@@ -1,5 +1,12 @@
-import { describe, test, expect } from "vitest";
-import { extractResults, mapEspnTeamName, type ESPNScoreboard } from "../lib/espn";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  extractResults,
+  fetchAndQueueEspnResults,
+  mapEspnTeamName,
+  type ESPNScoreboard,
+} from "../lib/espn";
+import { getPendingResultEvents, setResult } from "../lib/db";
+import { createTestDb } from "./test-helpers";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -162,6 +169,12 @@ describe("extractResults", () => {
 // ---------------------------------------------------------------------------
 
 describe("mapEspnTeamName (alias resolution)", () => {
+  test("maps CA Baptist to canonical Cal Baptist", () => {
+    expect(mapEspnTeamName("CA Baptist", { candidateNames: ["Cal Baptist"] })).toBe(
+      "Cal Baptist"
+    );
+  });
+
   test("maps Miami (OH) variants", () => {
     expect(mapEspnTeamName("Miami (OH)")).toBe("Miami OH");
     expect(mapEspnTeamName("miami oh")).toBe("Miami OH");
@@ -191,5 +204,83 @@ describe("mapEspnTeamName (alias resolution)", () => {
   test("strips punctuation for matching", () => {
     // "St. John's" → normalized "st johns" → alias
     expect(mapEspnTeamName("St. John's")).toBe("St. John's");
+  });
+
+  test("uses matchup context to resolve unique short names", () => {
+    expect(mapEspnTeamName("Miami", { candidateNames: ["Miami FL", "Missouri"] })).toBe(
+      "Miami FL"
+    );
+  });
+
+  test("does not resolve ambiguous short names without context", () => {
+    expect(mapEspnTeamName("Miami", { candidateNames: ["Miami FL", "Miami OH"] })).toBeNull();
+  });
+});
+
+describe("fetchAndQueueEspnResults", () => {
+  let cleanup: () => void;
+
+  beforeEach(() => {
+    cleanup = createTestDb();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  test("handles alias and contextual team-name matching across one ESPN batch", async () => {
+    setResult(20, 64, "Tennessee", "Miami OH", null, {
+      source: "play_in",
+      manualOverride: false,
+    });
+
+    const scoreboard: ESPNScoreboard = {
+      events: [
+        ...(makeFinalTournamentEvent("ev1", "Kansas", "CA Baptist", "Kansas", 82, 66) ?? []),
+        ...(makeFinalTournamentEvent("ev2", "Miami", "Missouri", "Miami", 71, 64) ?? []),
+        ...(makeFinalTournamentEvent("ev3", "Purdue", "Queens", "Purdue", 90, 58) ?? []),
+        ...(makeFinalTournamentEvent("ev4", "Purdue", "Miami", "Purdue", 76, 69) ?? []),
+      ],
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => scoreboard,
+      }))
+    );
+
+    const summary = await fetchAndQueueEspnResults(1);
+    const pending = getPendingResultEvents();
+
+    expect(summary.blockingIssues).toHaveLength(0);
+    expect(summary.queued).toBe(4);
+    expect(pending).toHaveLength(4);
+    expect(
+      pending.some(
+        (event) =>
+          event.team1 === "Kansas" &&
+          event.team2 === "Cal Baptist" &&
+          event.winner === "Kansas"
+      )
+    ).toBe(true);
+    expect(
+      pending.some(
+        (event) =>
+          ((event.team1 === "Miami FL" && event.team2 === "Missouri") ||
+            (event.team1 === "Missouri" && event.team2 === "Miami FL")) &&
+          event.winner === "Miami FL"
+      )
+    ).toBe(true);
+    expect(
+      pending.some(
+        (event) =>
+          ((event.team1 === "Purdue" && event.team2 === "Miami FL") ||
+            (event.team1 === "Miami FL" && event.team2 === "Purdue")) &&
+          event.winner === "Purdue"
+      )
+    ).toBe(true);
   });
 });

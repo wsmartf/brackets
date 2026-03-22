@@ -18,6 +18,9 @@ import { closeDb } from "../lib/db";
 import { resetTournamentCaches } from "../lib/tournament";
 
 export function createTestDb(): () => void {
+  closeDb();
+  resetTournamentCaches();
+
   const dir = mkdtempSync(join(tmpdir(), "brackets-test-"));
   const dbPath = join(dir, "test.db");
   process.env.MARCH_MADNESS_DB_PATH = dbPath;

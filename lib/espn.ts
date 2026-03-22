@@ -1,6 +1,13 @@
-import { addAuditLog, enqueueResultEvent, getResults, setResult } from "./db";
+import {
+  addAuditLog,
+  enqueueResultEvent,
+  getResults,
+  setResult,
+  type GameResult,
+} from "./db";
 import {
   buildCurrentGameDefinitions,
+  type GameDefinition,
   Team,
   resetTournamentCaches,
 } from "./tournament";
@@ -213,7 +220,18 @@ export function extractResults(scoreboard: ESPNScoreboard): ESPNGameResult[] {
   return results;
 }
 
-const ESPN_NAME_ALIASES: Record<string, string> = {
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/['’]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const RAW_ESPN_NAME_ALIASES: Record<string, string> = {
   "long island": "LIU",
   "miami (oh)": "Miami OH",
   "miami oh": "Miami OH",
@@ -225,6 +243,7 @@ const ESPN_NAME_ALIASES: Record<string, string> = {
   "saint marys": "Saint Mary's",
   "prairie view": "Prairie View A&M",
   "texas a&m aggies": "Texas A&M",
+  "ca baptist": "Cal Baptist",
   "michigan st": "Michigan State",
   "n dakota st": "North Dakota State",
   "kennesaw st": "Kennesaw State",
@@ -232,39 +251,75 @@ const ESPN_NAME_ALIASES: Record<string, string> = {
   "tennessee st": "Tennessee State",
 };
 
-function normalizeTeamName(name: string): string {
-  return name.toLowerCase().replace(/['’.]/g, "").replace(/\s+/g, " ").trim();
-}
+const ESPN_NAME_ALIASES = Object.fromEntries(
+  Object.entries(RAW_ESPN_NAME_ALIASES).map(([name, canonicalName]) => [
+    normalizeTeamName(name),
+    canonicalName,
+  ])
+);
 
-export function mapEspnTeamName(name: string): string | null {
-  const normalized = normalizeTeamName(name);
-  const alias = ESPN_NAME_ALIASES[normalized];
-  if (alias) {
-    return alias;
-  }
-
-  const results = getResults();
+function getDefaultCandidateNames(): string[] {
   const knownNames = new Set<string>();
-  for (const result of results) {
+
+  for (const result of getResults()) {
     knownNames.add(result.team1);
     knownNames.add(result.team2);
   }
 
-  for (const knownName of knownNames) {
-    if (normalizeTeamName(knownName) === normalized) {
-      return knownName;
-    }
-  }
-
   for (const slot of PLAY_IN_SLOTS) {
     for (const candidate of slot.candidates) {
-      if (normalizeTeamName(candidate.name) === normalized) {
-        return candidate.name;
-      }
+      knownNames.add(candidate.name);
     }
   }
 
-  return null;
+  return [...knownNames];
+}
+
+function findNormalizedCandidateMatch(
+  normalizedName: string,
+  candidateNames: Iterable<string>
+): string | null {
+  const matches = [...new Set(candidateNames)].filter(
+    (candidateName) => normalizeTeamName(candidateName) === normalizedName
+  );
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function findSingleTokenPrefixMatch(
+  normalizedName: string,
+  candidateNames: Iterable<string>
+): string | null {
+  if (normalizedName.length < 4) {
+    return null;
+  }
+
+  const matches = [...new Set(candidateNames)].filter((candidateName) => {
+    const normalizedCandidate = normalizeTeamName(candidateName);
+    return normalizedCandidate.startsWith(`${normalizedName} `);
+  });
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+export function mapEspnTeamName(
+  name: string,
+  options: { candidateNames?: Iterable<string> } = {}
+): string | null {
+  const normalized = normalizeTeamName(name);
+  const candidateNames = [...new Set(options.candidateNames ?? getDefaultCandidateNames())];
+
+  const exactCandidate = findNormalizedCandidateMatch(normalized, candidateNames);
+  if (exactCandidate) {
+    return exactCandidate;
+  }
+
+  const alias = ESPN_NAME_ALIASES[normalized];
+  if (alias) {
+    return candidateNames.includes(alias) ? alias : null;
+  }
+
+  return findSingleTokenPrefixMatch(normalized, candidateNames);
 }
 
 function formatDate(date: Date): string {
@@ -300,6 +355,44 @@ export interface EspnSyncSummary {
   }>;
 }
 
+function findMatchingGameForEspnResult(
+  espnResult: ESPNGameResult,
+  gameDefinitions: GameDefinition[]
+): GameDefinition | null {
+  const matches = gameDefinitions.filter((game) => {
+    const directMatch =
+      mapEspnTeamName(espnResult.team1, { candidateNames: [game.team1] }) === game.team1 &&
+      mapEspnTeamName(espnResult.team2, { candidateNames: [game.team2] }) === game.team2;
+    const reverseMatch =
+      mapEspnTeamName(espnResult.team1, { candidateNames: [game.team2] }) === game.team2 &&
+      mapEspnTeamName(espnResult.team2, { candidateNames: [game.team1] }) === game.team1;
+
+    return directMatch || reverseMatch;
+  });
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function projectQueuedResult(
+  results: GameResult[],
+  game: GameDefinition,
+  winner: string
+): GameResult[] {
+  return results.map((result) =>
+    result.game_index === game.game_index
+      ? {
+          ...result,
+          round: game.round,
+          team1: game.team1,
+          team2: game.team2,
+          winner,
+          source: "espn",
+          manual_override: 0,
+        }
+      : result
+  );
+}
+
 export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSummary> {
   const dateStrings = getRecentDateStrings(daysBack);
   const scoreboards = await Promise.all(dateStrings.map((date) => fetchScoreboard(date)));
@@ -319,16 +412,20 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
     return left.id.localeCompare(right.id);
   });
 
-  let results = getResults();
-  let gameDefinitions = buildCurrentGameDefinitions(results);
+  let projectedResults = getResults();
+  let gameDefinitions = buildCurrentGameDefinitions(projectedResults);
   let queued = 0;
   let skipped = 0;
   const blockingIssues: EspnSyncSummary["blockingIssues"] = [];
 
   for (const espnResult of sortedResults) {
-    const team1 = mapEspnTeamName(espnResult.team1);
-    const team2 = mapEspnTeamName(espnResult.team2);
-    const winner = mapEspnTeamName(espnResult.winner);
+    const matchingGame = findMatchingGameForEspnResult(espnResult, gameDefinitions);
+    const candidateNames = matchingGame
+      ? [matchingGame.team1, matchingGame.team2]
+      : undefined;
+    const team1 = matchingGame?.team1 ?? mapEspnTeamName(espnResult.team1);
+    const team2 = matchingGame?.team2 ?? mapEspnTeamName(espnResult.team2);
+    const winner = mapEspnTeamName(espnResult.winner, { candidateNames });
 
     if (!team1 || !team2 || !winner) {
       skipped++;
@@ -347,20 +444,22 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
     }
 
     const playInHandling = applyPlayInWinnerIfNeeded(team1, team2, winner);
-    results = getResults();
-    gameDefinitions = buildCurrentGameDefinitions(results);
 
     if (playInHandling.handled) {
+      projectedResults = getResults();
+      gameDefinitions = buildCurrentGameDefinitions(projectedResults);
       continue;
     }
 
-    const matchingGame = gameDefinitions.find(
-      (game) =>
-        (game.team1 === team1 && game.team2 === team2) ||
-        (game.team1 === team2 && game.team2 === team1)
-    );
+    const resolvedGame =
+      matchingGame ??
+      gameDefinitions.find(
+        (game) =>
+          (game.team1 === team1 && game.team2 === team2) ||
+          (game.team1 === team2 && game.team2 === team1)
+      );
 
-    if (!matchingGame) {
+    if (!resolvedGame) {
       skipped++;
       addAuditLog("espn_result_skipped", {
         reason: "no_matching_game",
@@ -379,7 +478,9 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
       continue;
     }
 
-    const currentResult = results.find((result) => result.game_index === matchingGame.game_index);
+    const currentResult = projectedResults.find(
+      (result) => result.game_index === resolvedGame.game_index
+    );
     if (!currentResult) {
       skipped++;
       continue;
@@ -389,28 +490,28 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
       skipped++;
       addAuditLog("espn_result_skipped", {
         reason: "manual_override",
-        gameIndex: matchingGame.game_index,
-        team1: matchingGame.team1,
-        team2: matchingGame.team2,
+        gameIndex: resolvedGame.game_index,
+        team1: resolvedGame.team1,
+        team2: resolvedGame.team2,
         winner,
       });
       continue;
     }
 
-    if (winner !== matchingGame.team1 && winner !== matchingGame.team2) {
+    if (winner !== resolvedGame.team1 && winner !== resolvedGame.team2) {
       skipped++;
       addAuditLog("espn_result_skipped", {
         reason: "winner_not_in_matchup",
-        gameIndex: matchingGame.game_index,
-        team1: matchingGame.team1,
-        team2: matchingGame.team2,
+        gameIndex: resolvedGame.game_index,
+        team1: resolvedGame.team1,
+        team2: resolvedGame.team2,
         winner,
       });
       blockingIssues.push({
         reason: "winner_not_in_matchup",
         espnResultId: espnResult.id,
-        team1: matchingGame.team1,
-        team2: matchingGame.team2,
+        team1: resolvedGame.team1,
+        team2: resolvedGame.team2,
         winner,
       });
       continue;
@@ -418,37 +519,37 @@ export async function fetchAndQueueEspnResults(daysBack = 4): Promise<EspnSyncSu
 
     if (
       currentResult.winner === winner &&
-      currentResult.team1 === matchingGame.team1 &&
-      currentResult.team2 === matchingGame.team2
+      currentResult.team1 === resolvedGame.team1 &&
+      currentResult.team2 === resolvedGame.team2
     ) {
       continue;
     }
 
     const wasQueued = enqueueResultEvent({
-      gameIndex: matchingGame.game_index,
-      round: matchingGame.round,
-      team1: matchingGame.team1,
-      team2: matchingGame.team2,
+      gameIndex: resolvedGame.game_index,
+      round: resolvedGame.round,
+      team1: resolvedGame.team1,
+      team2: resolvedGame.team2,
       winner,
       source: "espn",
       espnEventId: espnResult.id,
     });
     if (wasQueued) {
       addAuditLog("espn_result_queued", {
-        gameIndex: matchingGame.game_index,
-        round: matchingGame.round,
-        team1: matchingGame.team1,
-        team2: matchingGame.team2,
+        gameIndex: resolvedGame.game_index,
+        round: resolvedGame.round,
+        team1: resolvedGame.team1,
+        team2: resolvedGame.team2,
         winner,
         espnResultId: espnResult.id,
         score1: espnResult.score1,
         score2: espnResult.score2,
       });
       queued++;
+      projectedResults = projectQueuedResult(projectedResults, resolvedGame, winner);
     }
 
-    results = getResults();
-    gameDefinitions = buildCurrentGameDefinitions(results);
+    gameDefinitions = buildCurrentGameDefinitions(projectedResults);
   }
 
   return {
