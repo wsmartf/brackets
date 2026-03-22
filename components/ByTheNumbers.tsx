@@ -17,10 +17,6 @@ export default function ByTheNumbers({
     ? entries.reduce((a, b) => (a[1] >= b[1] ? a : b))
     : null;
 
-  const rarest = entries.length > 0
-    ? entries.reduce((a, b) => (a[1] <= b[1] ? a : b))
-    : null;
-
   const exactImpacts = impacts.filter((i) => i.exact && i.eliminated != null);
   const biggestKill = exactImpacts.length > 0
     ? Math.max(...exactImpacts.map((i) => i.eliminated ?? 0))
@@ -34,15 +30,6 @@ export default function ByTheNumbers({
       label: "Most backed",
       value: mostBacked[0],
       sub: `${count.toLocaleString()} brackets · ${(mostBacked[1] * 100).toFixed(1)}%`,
-    });
-  }
-
-  if (rarest && rarest[0] !== mostBacked?.[0]) {
-    const count = Math.round(rarest[1] * remaining);
-    stats.push({
-      label: "Rarest contender",
-      value: rarest[0],
-      sub: `${count.toLocaleString()} bracket${count === 1 ? "" : "s"}`,
     });
   }
 
