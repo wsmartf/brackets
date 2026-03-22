@@ -348,7 +348,6 @@ export default function Home() {
               <ByTheNumbers
                 probs={stats.championshipProbs ?? {}}
                 remaining={stats.remaining}
-                gamesCompleted={stats.gamesCompleted}
                 impacts={impacts}
               />
             </div>

@@ -3,14 +3,12 @@ import type { EliminationImpact } from "./GameFeed";
 interface ByTheNumbersProps {
   probs: Record<string, number>;
   remaining: number;
-  gamesCompleted: number;
   impacts: EliminationImpact[];
 }
 
 export default function ByTheNumbers({
   probs,
   remaining,
-  gamesCompleted,
   impacts,
 }: ByTheNumbersProps) {
   const entries = Object.entries(probs);
@@ -27,8 +25,6 @@ export default function ByTheNumbers({
   const biggestKill = exactImpacts.length > 0
     ? Math.max(...exactImpacts.map((i) => i.eliminated ?? 0))
     : null;
-
-  const gamesRemaining = 63 - gamesCompleted;
 
   const stats: Array<{ label: string; value: string; sub?: string }> = [];
 
@@ -49,12 +45,6 @@ export default function ByTheNumbers({
       sub: `${count.toLocaleString()} bracket${count === 1 ? "" : "s"}`,
     });
   }
-
-  stats.push({
-    label: "Games remaining",
-    value: gamesRemaining.toLocaleString(),
-    sub: "of 63",
-  });
 
   if (biggestKill != null) {
     stats.push({

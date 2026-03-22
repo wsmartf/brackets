@@ -60,6 +60,7 @@ export default function ProbabilityBars({
       </div>
       {sorted.map(([team, prob]) => {
         const count = remaining != null ? Math.round(prob * remaining) : null;
+        const percentage = `${(prob * 100).toFixed(1)}%`;
         return (
           <div key={team} className="flex items-center gap-3">
             <Link
@@ -74,9 +75,16 @@ export default function ProbabilityBars({
                 style={{ width: `${(prob / maxProb) * 100}%` }}
               />
             </div>
-            <span className="w-28 text-sm text-white/50 tabular-nums text-right">
-              {count != null ? count.toLocaleString() : `${(prob * 100).toFixed(1)}%`}
-            </span>
+            <div className="w-28 text-right">
+              <span className="block text-sm text-white/60 tabular-nums">
+                {percentage}
+              </span>
+              {count != null && (
+                <span className="block text-xs text-white/35 tabular-nums">
+                  {count.toLocaleString()}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}

@@ -12,6 +12,7 @@ For architecture constraints, see [docs/architecture/overview.md](/Users/willsma
 Use `Makefile` commands by default:
 
 ```bash
+make init
 make install
 make dev
 make verify
@@ -34,6 +35,7 @@ make ops-audit
 
 ## Local Development
 ```bash
+make init
 make install
 make dev
 ```
