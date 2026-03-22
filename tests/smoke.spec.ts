@@ -84,6 +84,31 @@ test.describe("GET /api/survivors", () => {
     }
   });
 
+  test("valid champion filter returns valid JSON", async ({ request }) => {
+    const statsResponse = await request.get("/api/stats");
+    expect(statsResponse.ok()).toBe(true);
+
+    const stats = await statsResponse.json() as {
+      championshipProbs?: Record<string, number>;
+    };
+    const champion =
+      Object.entries(stats.championshipProbs ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      "Duke";
+
+    const response = await request.get(
+      `/api/survivors?champion=${encodeURIComponent(champion)}&limit=3`
+    );
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.indices)).toBe(true);
+    expect(typeof data.total).toBe("number");
+    expect((data.indices as unknown[]).length).toBeLessThanOrEqual(3);
+    if ((data.total as number) > 0) {
+      expect((data.indices as unknown[]).length).toBeGreaterThan(0);
+    }
+  });
+
   test("unknown champion returns 400", async ({ request }) => {
     const response = await request.get("/api/survivors?champion=NotATeam");
     expect(response.status()).toBe(400);

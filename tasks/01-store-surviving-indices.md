@@ -51,14 +51,16 @@ function replaceSurvivingIndices(
 - No meaningful regression to analysis runtime
 
 ## Current Status
-- Status: In progress
-- Last updated: 2026-03-21
+- Status: Done
+- Last updated: 2026-03-22
 - Notes:
-  - Surviving-index persistence work is partially implemented in the repo.
+  - Surviving-index persistence is implemented in the worker, analysis, DB, and API layers.
+  - Verified against the cached analysis blob: `surviving_indices` row count matches `remaining`, and grouped `champion_index` counts match the cached champion totals.
+  - Positive and negative `/api/survivors` API paths are covered by smoke tests.
+  - Analysis runtime benchmarking was completed separately.
 
 ## Next Steps
-- Verify DB writes and API behavior end to end.
-- Confirm counts match the cached analysis blob after a smoke analysis run.
+- None. Task is complete.
 
 ## Affected Files
 - `lib/worker.mts`
