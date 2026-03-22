@@ -43,10 +43,6 @@ export default function ProbabilityBars({
 
   const maxProb = sorted[0][1];
 
-  const allEntries = Object.entries(probs).sort(([, a], [, b]) => a - b);
-  const rarest = allEntries[0] ?? null;
-  const rarestIsShown = rarest ? sorted.some(([t]) => t === rarest[0]) : false;
-
   return (
     <div className="space-y-3">
       <div className="mb-4">
@@ -88,11 +84,6 @@ export default function ProbabilityBars({
           </div>
         );
       })}
-      {rarest && !rarestIsShown && remaining != null && (
-        <p className="text-xs text-white/30 pt-1">
-          Rarest: {rarest[0]} — {Math.round(rarest[1] * remaining).toLocaleString()} bracket{Math.round(rarest[1] * remaining) === 1 ? "" : "s"}
-        </p>
-      )}
     </div>
   );
 }
