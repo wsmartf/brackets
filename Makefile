@@ -1,4 +1,4 @@
-.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke future-killers-stub future-killers-seed refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all
+.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke future-killers-stub future-killers-seed refresh-loop rehearse-prod rehearse-prod-copy rehearse-prod-build rehearse-prod-start ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all
 
 init: install
 
@@ -87,6 +87,19 @@ future-killers-seed:
 
 refresh-loop:
 	bash scripts/ops/refresh_loop.sh
+
+rehearse-prod-copy:
+	REHEARSAL_DB_OVERWRITE=1 bash scripts/ops/backup_prod_db.sh
+
+rehearse-prod-build:
+	NEXT_DIST_DIR="$${NEXT_DIST_DIR:-.next-rehearsal}" npm run build
+
+rehearse-prod: rehearse-prod-copy rehearse-prod-build rehearse-prod-start
+
+rehearse-prod-start:
+	@if [ -z "$${MARCH_MADNESS_DB_PATH:-}" ]; then echo "MARCH_MADNESS_DB_PATH is required" >&2; exit 1; fi
+	@if [ -z "$${ADMIN_TOKEN:-}" ]; then echo "ADMIN_TOKEN is required" >&2; exit 1; fi
+	NEXT_DIST_DIR="$${NEXT_DIST_DIR:-.next-rehearsal}" PORT="$${PORT:-3001}" HOSTNAME="$${HOSTNAME:-127.0.0.1}" npm run start
 
 ops-status:
 	curl -s $(ADMIN_BASE_URL)/api/stats | jq .
