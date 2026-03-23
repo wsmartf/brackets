@@ -33,7 +33,9 @@
     "lib/**/*.mts",
     "next.config.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-rehearsal/types/**/*.ts",
+    ".next-rehearsal/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules", "tests", "playwright.config.ts", "vitest.config.ts", "scripts"]
 }

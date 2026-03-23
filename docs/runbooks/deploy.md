@@ -118,6 +118,105 @@ Notes:
   the final manual-override step to confirm the bracket page reflects the new
   eliminated state.
 
+## Production Data Rehearsal
+Run this on the production host before a deploy if you want to preview the
+exact deploy candidate against the current production DB state without touching
+the live app on `127.0.0.1:3000`.
+
+The preferred workflow uses the main checkout plus a separate Next build output
+directory:
+- live app keeps using `.next`
+- rehearsal build uses `.next-rehearsal`
+- rehearsal DB copy lives at `/tmp/brackets-prod-rehearsal.db`
+- rehearsal app listens on `127.0.0.1:3001`
+
+This is lower friction than a separate worktree and includes local uncommitted
+changes in the rehearsal.
+
+From the live checkout, run the full local rehearsal in one command:
+
+```bash
+export MARCH_MADNESS_DB_PATH='/tmp/brackets-prod-rehearsal.db'
+export ADMIN_TOKEN='replace-with-local-rehearsal-token'
+export PORT=3001
+export HOSTNAME=127.0.0.1
+
+make rehearse-prod
+```
+
+This does three things in order:
+- snapshots the live SQLite DB into `/tmp/brackets-prod-rehearsal.db`
+- builds the rehearsal app into `.next-rehearsal`
+- starts the rehearsal app on `127.0.0.1:3001`
+
+If you want to run the steps separately:
+
+```bash
+make rehearse-prod-copy
+make rehearse-prod-build
+make rehearse-prod-start
+```
+
+In another shell on the production host, point admin commands at the rehearsal
+instance:
+
+```bash
+source .env.ops
+export ADMIN_BASE_URL='http://127.0.0.1:3001'
+export ADMIN_TOKEN='replace-with-local-rehearsal-token'
+```
+
+Recommended checks before a refresh:
+
+```bash
+curl -s "$ADMIN_BASE_URL/api/stats" | jq .
+curl -s "$ADMIN_BASE_URL/api/future-killers" | jq .
+```
+
+Run the full rehearsal refresh only if the change touches refresh, analysis, or
+ESPN-sync behavior:
+
+```bash
+make ops-refresh
+make ops-status
+# repeat `make ops-status` until `.analysisStatus.isRunning` is false
+curl -s "$ADMIN_BASE_URL/api/future-killers" | jq .
+```
+
+### Browser Access From Your Laptop
+Open a second terminal on your laptop, not on the production host:
+
+```bash
+ssh -N -L 3001:127.0.0.1:3001 your-user@your-prod-host
+```
+
+Then open this URL in your local browser:
+
+```text
+http://127.0.0.1:3001
+```
+
+If local port `3001` is already in use, forward a different local port:
+
+```bash
+ssh -N -L 33001:127.0.0.1:3001 your-user@your-prod-host
+```
+
+Then browse to `http://127.0.0.1:33001`.
+
+What to verify:
+- homepage loads and shows the expected current results
+- `/api/future-killers` returns the expected rows and ordering
+- the fallback note looks sane if ESPN is unavailable
+- live `3000` is unchanged while rehearsal `3001` is running
+
+Cleanup:
+
+```bash
+rm -f /tmp/brackets-prod-rehearsal.db
+rm -rf .next-rehearsal
+```
+
 ## Pre-Tournament Restart Check
 Run this once on the actual host before games start:
 
