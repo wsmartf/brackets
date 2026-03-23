@@ -115,6 +115,26 @@ test.describe("GET /api/survivors", () => {
   });
 });
 
+test.describe("GET /api/future-killers", () => {
+  test("returns valid JSON with expected shape", async ({ request }) => {
+    const response = await request.get("/api/future-killers");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.rows)).toBe(true);
+    expect(["espn", "derived"]).toContain(data.source as string);
+    expect(typeof data.isFallback).toBe("boolean");
+
+    const rows = data.rows as Array<Record<string, unknown>>;
+    if (rows.length > 0) {
+      expect(typeof rows[0].gameIndex).toBe("number");
+      expect(typeof rows[0].team1).toBe("string");
+      expect(typeof rows[0].team2).toBe("string");
+      expect(typeof rows[0].guaranteedKills).toBe("number");
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Page load smoke tests
 // ---------------------------------------------------------------------------
@@ -126,6 +146,18 @@ test.describe("dashboard", () => {
     await expect(page).not.toHaveTitle(/Error/i);
     // Something renders
     await expect(page.locator("body")).not.toBeEmpty();
+
+     const myTeamButton = page.getByRole("button", { name: "My Team" });
+     if ((await myTeamButton.count()) > 0) {
+       await expect(page.getByLabel("Team")).toBeVisible();
+
+       await page.getByRole("button", { name: "Future Killers" }).click();
+       await expect(
+         page.getByText(
+           /Next scheduled games that are guaranteed to eliminate surviving brackets\.|No upcoming scheduled tournament games with known participants yet\.|Live schedule unavailable\. Showing known future matchups instead\.|Could not load upcoming games right now\./
+         )
+       ).toBeVisible();
+     }
   });
 
   test("about page loads", async ({ page }) => {

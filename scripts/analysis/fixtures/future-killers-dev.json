@@ -1,0 +1,73 @@
+{
+  "scenario": "future-killers-dev",
+  "ignoreRequestedDates": true,
+  "steps": [
+    {
+      "step": 0,
+      "label": "Populated future killers slate",
+      "visibleEventIds": ["fk-6", "fk-7", "fk-8", "fk-9", "fk-10"]
+    }
+  ],
+  "events": [
+    {
+      "id": "fk-6",
+      "gameIndex": 6,
+      "round": 64,
+      "date": "2026-03-22T23:10:00Z",
+      "status": "STATUS_SCHEDULED",
+      "team1": "UCLA",
+      "team2": "UCF",
+      "winner": null,
+      "score1": 0,
+      "score2": 0
+    },
+    {
+      "id": "fk-7",
+      "gameIndex": 7,
+      "round": 64,
+      "date": "2026-03-22T23:45:00Z",
+      "status": "STATUS_SCHEDULED",
+      "team1": "UConn",
+      "team2": "Furman",
+      "winner": null,
+      "score1": 0,
+      "score2": 0
+    },
+    {
+      "id": "fk-8",
+      "gameIndex": 8,
+      "round": 64,
+      "date": "2026-03-23T00:20:00Z",
+      "status": "STATUS_SCHEDULED",
+      "team1": "Arizona",
+      "team2": "LIU",
+      "winner": null,
+      "score1": 0,
+      "score2": 0
+    },
+    {
+      "id": "fk-9",
+      "gameIndex": 9,
+      "round": 64,
+      "date": "2026-03-23T00:55:00Z",
+      "status": "STATUS_SCHEDULED",
+      "team1": "Villanova",
+      "team2": "Utah State",
+      "winner": null,
+      "score1": 0,
+      "score2": 0
+    },
+    {
+      "id": "fk-10",
+      "gameIndex": 10,
+      "round": 64,
+      "date": "2026-03-23T01:30:00Z",
+      "status": "STATUS_SCHEDULED",
+      "team1": "Wisconsin",
+      "team2": "High Point",
+      "winner": null,
+      "score1": 0,
+      "score2": 0
+    }
+  ]
+}

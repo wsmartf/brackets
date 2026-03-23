@@ -63,9 +63,7 @@ describe("getSurvivorIndices", () => {
 
   test("filters by championIndex", () => {
     const indices = getSurvivorIndices({ championIndex: 0, limit: 100 });
-    expect(indices).toHaveLength(2);
-    expect(indices).toContain(10);
-    expect(indices).toContain(30);
+    expect(indices).toEqual([10, 30]);
   });
 
   test("returns empty array for unknown championIndex", () => {
@@ -75,7 +73,12 @@ describe("getSurvivorIndices", () => {
 
   test("respects limit", () => {
     const indices = getSurvivorIndices({ limit: 2 });
-    expect(indices).toHaveLength(2);
+    expect(indices).toEqual([10, 20]);
+  });
+
+  test("supports offset pagination in sorted order", () => {
+    const indices = getSurvivorIndices({ limit: 2, offset: 1 });
+    expect(indices).toEqual([20, 30]);
   });
 });
 

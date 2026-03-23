@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   extractResults,
+  extractScheduledTournamentGames,
   fetchAndQueueEspnResults,
+  getScoreboardCalendarDateKeys,
   mapEspnTeamName,
   type ESPNScoreboard,
 } from "../lib/espn";
@@ -160,6 +162,126 @@ describe("extractResults", () => {
       ],
     };
     expect(extractResults(scoreboard)).toHaveLength(2);
+  });
+});
+
+describe("extractScheduledTournamentGames", () => {
+  test("extracts only scheduled tournament games in chronological order", () => {
+    const scoreboard: ESPNScoreboard = {
+      events: [
+        {
+          id: "ev-live",
+          date: "2026-03-22T21:15Z",
+          name: "Live Game",
+          status: { type: { name: "STATUS_IN_PROGRESS", state: "in", completed: false } },
+          competitions: [
+            {
+              type: { abbreviation: "TRNMNT" },
+              competitors: [
+                {
+                  team: { displayName: "Team A", shortDisplayName: "A", abbreviation: "A" },
+                  score: "40",
+                  winner: false,
+                },
+                {
+                  team: { displayName: "Team B", shortDisplayName: "B", abbreviation: "B" },
+                  score: "38",
+                  winner: false,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "ev-2",
+          date: "2026-03-22T23:10Z",
+          name: "Second Game",
+          status: { type: { name: "STATUS_SCHEDULED", state: "pre", completed: false } },
+          competitions: [
+            {
+              type: { abbreviation: "TRNMNT" },
+              startDate: "2026-03-22T23:10Z",
+              competitors: [
+                {
+                  team: { displayName: "Team C", shortDisplayName: "C", abbreviation: "C" },
+                  score: "0",
+                  winner: false,
+                },
+                {
+                  team: { displayName: "Team D", shortDisplayName: "D", abbreviation: "D" },
+                  score: "0",
+                  winner: false,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "ev-1",
+          date: "2026-03-22T22:10Z",
+          name: "First Game",
+          status: { type: { name: "STATUS_SCHEDULED", state: "pre", completed: false } },
+          competitions: [
+            {
+              type: { abbreviation: "TRNMNT" },
+              startDate: "2026-03-22T22:10Z",
+              competitors: [
+                {
+                  team: { displayName: "Team E", shortDisplayName: "E", abbreviation: "E" },
+                  score: "0",
+                  winner: false,
+                },
+                {
+                  team: { displayName: "Team F", shortDisplayName: "F", abbreviation: "F" },
+                  score: "0",
+                  winner: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(extractScheduledTournamentGames(scoreboard)).toEqual([
+      {
+        eventId: "ev-1",
+        eventDate: "2026-03-22T22:10Z",
+        status: "STATUS_SCHEDULED",
+        team1: "E",
+        team2: "F",
+      },
+      {
+        eventId: "ev-2",
+        eventDate: "2026-03-22T23:10Z",
+        status: "STATUS_SCHEDULED",
+        team1: "C",
+        team2: "D",
+      },
+    ]);
+  });
+});
+
+describe("getScoreboardCalendarDateKeys", () => {
+  test("returns sorted unique YYYYMMDD keys from the league calendar", () => {
+    const scoreboard: ESPNScoreboard = {
+      leagues: [
+        {
+          calendar: [
+            "2026-03-27T07:00Z",
+            "2026-03-22T07:00Z",
+            "2026-03-26T07:00Z",
+            "2026-03-22T07:00Z",
+          ],
+        },
+      ],
+    };
+
+    expect(getScoreboardCalendarDateKeys(scoreboard)).toEqual([
+      "20260322",
+      "20260326",
+      "20260327",
+    ]);
   });
 });
 

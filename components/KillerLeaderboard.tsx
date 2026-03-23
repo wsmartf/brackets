@@ -106,10 +106,7 @@ export default function KillerLeaderboard({
   return (
     <div className="space-y-3">
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-white">
-          Killer leaderboard
-        </h3>
-        <p className="text-xs text-white/40 mt-0.5">
+        <p className="text-xs text-white/40">
           Games that wiped out the highest share of surviving brackets
         </p>
       </div>

@@ -20,6 +20,9 @@ interface Stats {
   gamesCompleted: number;
   analyzedAt: string | null;
   championshipProbs?: Record<string, number>;
+  roundSurvivorCounts?: Record<string, number[]>;
+  gamePickCounts?: Record<number, [number, number]>;
+  indicesStored?: boolean;
   analysisStatus?: {
     isRunning: boolean;
     lastStartedAt: string | null;
@@ -36,6 +39,14 @@ interface GameResult {
   team2: string;
   winner: string | null;
   updated_at: string;
+}
+
+interface Snapshot {
+  id: number;
+  remaining: number;
+  gamesCompleted: number;
+  championshipProbs: Record<string, number>;
+  createdAt: string;
 }
 
 function parseTimestampMs(timestamp: string): number {
@@ -92,6 +103,7 @@ export default function Home() {
   });
   const [results, setResults] = useState<GameResult[]>([]);
   const [impacts, setImpacts] = useState<EliminationImpact[]>([]);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const previousIsRunningRef = useRef(false);
 
@@ -130,6 +142,9 @@ export default function Home() {
       const data = await res.json();
       if (data.eliminationImpact) {
         setImpacts(data.eliminationImpact);
+      }
+      if (Array.isArray(data.snapshots)) {
+        setSnapshots(data.snapshots);
       }
     } catch (err) {
       console.error("Failed to fetch snapshots:", err);
@@ -267,7 +282,7 @@ export default function Home() {
           )}
 
           <p className="mt-4 text-white/30 text-sm italic">
-            The perfect bracket is in here somewhere. Probably.
+            The perfect bracket is in here somewhere. Maybe.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -342,6 +357,8 @@ export default function Home() {
                 remaining={stats.remaining}
                 impacts={impacts}
                 results={results}
+                roundSurvivorCounts={stats.roundSurvivorCounts}
+                snapshots={snapshots}
               />
             </div>
             <div className="w-full md:w-64 shrink-0">

@@ -6,6 +6,7 @@
  * Query params:
  *   champion — team name (e.g. "Duke") to filter by champion
  *   limit    — max results to return (default 50, max 500)
+ *   offset   — row offset for pagination (default 0)
  *
  * Response: { indices: number[], total: number }
  *   indices — array of bracket indices (use /bracket/[index] to view)
@@ -22,7 +23,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const championName = url.searchParams.get("champion");
   const limitParam = url.searchParams.get("limit");
+  const offsetParam = url.searchParams.get("offset");
   const limit = Math.min(500, Math.max(1, parseInt(limitParam ?? "50", 10) || 50));
+  const offset = Math.max(0, parseInt(offsetParam ?? "0", 10) || 0);
 
   let championIndex: number | undefined;
   if (championName) {
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
     championIndex = idx;
   }
 
-  const indices = getSurvivorIndices({ championIndex, limit });
+  const indices = getSurvivorIndices({ championIndex, limit, offset });
   const total = getSurvivorCount(championIndex);
 
   return NextResponse.json({ indices, total });

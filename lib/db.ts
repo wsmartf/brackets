@@ -643,23 +643,25 @@ export function replaceSurvivingIndices(
 export function getSurvivorIndices(options: {
   championIndex?: number;
   limit?: number;
+  offset?: number;
 } = {}): number[] {
   initDb();
   const db = getDb();
   const limit = options.limit ?? 50;
+  const offset = options.offset ?? 0;
 
   if (options.championIndex !== undefined) {
     const rows = db
       .prepare(
-        "SELECT idx FROM surviving_indices WHERE champion_index = ? LIMIT ?"
+        "SELECT idx FROM surviving_indices WHERE champion_index = ? ORDER BY idx ASC LIMIT ? OFFSET ?"
       )
-      .all(options.championIndex, limit) as Array<{ idx: number }>;
+      .all(options.championIndex, limit, offset) as Array<{ idx: number }>;
     return rows.map((r) => r.idx);
   }
 
   const rows = db
-    .prepare("SELECT idx FROM surviving_indices LIMIT ?")
-    .all(limit) as Array<{ idx: number }>;
+    .prepare("SELECT idx FROM surviving_indices ORDER BY idx ASC LIMIT ? OFFSET ?")
+    .all(limit, offset) as Array<{ idx: number }>;
   return rows.map((r) => r.idx);
 }
 

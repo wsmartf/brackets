@@ -3,6 +3,8 @@
 import { useState } from "react";
 import ProbabilityBars from "./ProbabilityBars";
 import KillerLeaderboard from "./KillerLeaderboard";
+import MyTeamTab from "./MyTeamTab";
+import FutureKillersTab from "./FutureKillersTab";
 import type { EliminationImpact } from "./GameFeed";
 
 type Tab = "survivors" | "killers" | "my-team" | "future-killers";
@@ -28,6 +30,14 @@ interface AnalysisCardSwitcherProps {
   remaining: number;
   impacts: EliminationImpact[];
   results: GameResult[];
+  roundSurvivorCounts?: Record<string, number[]>;
+  snapshots: Array<{
+    id: number;
+    remaining: number;
+    gamesCompleted: number;
+    championshipProbs: Record<string, number>;
+    createdAt: string;
+  }>;
 }
 
 export default function AnalysisCardSwitcher({
@@ -35,8 +45,10 @@ export default function AnalysisCardSwitcher({
   remaining,
   impacts,
   results,
+  roundSurvivorCounts,
+  snapshots,
 }: AnalysisCardSwitcherProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("survivors");
+  const [activeTab, setActiveTab] = useState<Tab>("my-team");
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 flex flex-col">
@@ -45,10 +57,10 @@ export default function AnalysisCardSwitcher({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-3 text-sm font-medium shrink-0 transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-3.5 text-[15px] font-semibold tracking-tight shrink-0 transition-colors border-b-2 -mb-px ${
               activeTab === tab.id
-                ? "text-white border-white"
-                : "text-white/40 border-transparent hover:text-white/70"
+                ? "text-white border-white bg-white/[0.03]"
+                : "text-white/55 border-transparent hover:text-white/80"
             }`}
           >
             {tab.label}
@@ -64,18 +76,15 @@ export default function AnalysisCardSwitcher({
           <KillerLeaderboard impacts={impacts} results={results} />
         )}
         {activeTab === "my-team" && (
-          <div className="py-4">
-            <p className="text-white/40 text-sm italic">
-              Coming soon — search for your team to see how many surviving brackets have them winning.
-            </p>
-          </div>
+          <MyTeamTab
+            probs={probs}
+            remaining={remaining}
+            roundSurvivorCounts={roundSurvivorCounts}
+            snapshots={snapshots}
+          />
         )}
         {activeTab === "future-killers" && (
-          <div className="py-4">
-            <p className="text-white/40 text-sm italic">
-              Coming soon — see which upcoming games stand to eliminate the most brackets.
-            </p>
-          </div>
+          <FutureKillersTab />
         )}
       </div>
     </div>

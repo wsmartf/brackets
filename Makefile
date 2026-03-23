@@ -1,4 +1,4 @@
-.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all
+.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke future-killers-stub future-killers-seed refresh-loop ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all
 
 init: install
 
@@ -78,6 +78,12 @@ replay-stub:
 
 replay-smoke:
 	node scripts/analysis/replay_tournament.mjs
+
+future-killers-stub:
+	ESPN_STUB_SCENARIO=scripts/analysis/fixtures/future-killers-dev.json node scripts/analysis/espn_stub.mjs
+
+future-killers-seed:
+	node --require tsx/cjs scripts/analysis/seed_future_killers_dev.cjs
 
 refresh-loop:
 	bash scripts/ops/refresh_loop.sh

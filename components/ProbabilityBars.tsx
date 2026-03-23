@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 const DEFAULT_VISIBLE_TEAMS = 12;
@@ -52,22 +52,8 @@ export default function ProbabilityBars({
   const [visibleTeams, setVisibleTeams] = useState(() =>
     getInitialVisibleTeamCount(sorted.length, maxTeams)
   );
-
-  useEffect(() => {
-    setVisibleTeams((currentVisibleTeams) => {
-      const initialVisibleTeams = getInitialVisibleTeamCount(sorted.length, maxTeams);
-
-      if (currentVisibleTeams < initialVisibleTeams) {
-        return initialVisibleTeams;
-      }
-
-      if (currentVisibleTeams > sorted.length) {
-        return sorted.length;
-      }
-
-      return currentVisibleTeams;
-    });
-  }, [maxTeams, sorted.length]);
+  const initialVisibleTeams = getInitialVisibleTeamCount(sorted.length, maxTeams);
+  const visibleCount = Math.min(sorted.length, Math.max(initialVisibleTeams, visibleTeams));
 
   if (sorted.length === 0) {
     return (
@@ -82,10 +68,7 @@ export default function ProbabilityBars({
   return (
     <div className="space-y-3">
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-white">
-          What survivors believe
-        </h3>
-        <p className="text-xs text-white/40 mt-0.5">
+        <p className="text-xs text-white/40">
           Championship picks · Among the{" "}
           {remaining != null ? remaining.toLocaleString() : "surviving"} still-perfect brackets
         </p>
@@ -93,7 +76,7 @@ export default function ProbabilityBars({
           {sorted.length} team{sorted.length === 1 ? "" : "s"} represented
         </p>
       </div>
-      {sorted.slice(0, visibleTeams).map(([team, prob]) => {
+      {sorted.slice(0, visibleCount).map(([team, prob]) => {
         const count = remaining != null ? Math.round(prob * remaining) : null;
         const percentage = `${(prob * 100).toFixed(1)}%`;
         return (
@@ -123,7 +106,7 @@ export default function ProbabilityBars({
           </div>
         );
       })}
-      {visibleTeams < sorted.length && (
+      {visibleCount < sorted.length && (
         <div className="pt-2">
           <button
             type="button"
@@ -134,8 +117,8 @@ export default function ProbabilityBars({
             }
             className="text-sm font-medium text-white/70 transition-colors hover:text-white"
           >
-            Show {Math.min(SHOW_MORE_STEP, sorted.length - visibleTeams)} more team
-            {sorted.length - visibleTeams > 1 ? "s" : ""}
+            Show {Math.min(SHOW_MORE_STEP, sorted.length - visibleCount)} more team
+            {sorted.length - visibleCount > 1 ? "s" : ""}
           </button>
         </div>
       )}

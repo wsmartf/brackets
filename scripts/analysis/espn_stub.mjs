@@ -17,6 +17,19 @@ const eventsById = new Map(scenario.events.map((event) => [event.id, event]));
 let currentStep = 0;
 let failureMode = "none";
 
+function inferStatusType(statusName) {
+  switch (statusName) {
+    case "STATUS_SCHEDULED":
+      return { name: statusName, state: "pre", completed: false };
+    case "STATUS_IN_PROGRESS":
+    case "STATUS_HALFTIME":
+      return { name: statusName, state: "in", completed: false };
+    case "STATUS_FINAL":
+    default:
+      return { name: statusName || "STATUS_FINAL", state: "post", completed: true };
+  }
+}
+
 function getStepState() {
   const step = scenario.steps[currentStep] ?? scenario.steps[scenario.steps.length - 1];
   return {
@@ -50,20 +63,20 @@ function scoreboardDateString(isoDate) {
 }
 
 function buildScoreboardEvent(event) {
+  const statusType = inferStatusType(event.status || "STATUS_FINAL");
   return {
     id: event.id,
     date: event.date,
     name: `${event.team1} vs ${event.team2}`,
     status: {
-      type: {
-        name: event.status || "STATUS_FINAL",
-      },
+      type: statusType,
     },
     competitions: [
       {
         type: {
           abbreviation: "TRNMNT",
         },
+        startDate: event.date,
         competitors: [
           {
             team: {
@@ -121,6 +134,18 @@ function parseJsonBody(request) {
     });
     request.on("error", rejectBody);
   });
+}
+
+function buildLeagueCalendar() {
+  if (Array.isArray(scenario.calendarDates) && scenario.calendarDates.length > 0) {
+    return scenario.calendarDates;
+  }
+
+  const visibleEvents = getStepState().visibleEventIds
+    .map((eventId) => eventsById.get(eventId))
+    .filter(Boolean);
+
+  return [...new Set(visibleEvents.map((event) => `${event.date.slice(0, 10)}T07:00Z`))];
 }
 
 const server = createServer(async (request, response) => {
@@ -192,6 +217,9 @@ const server = createServer(async (request, response) => {
       .map((eventId) => eventsById.get(eventId))
       .filter(Boolean)
       .filter((event) => {
+        if (scenario.ignoreRequestedDates) {
+          return true;
+        }
         if (requestedDates.size === 0) {
           return true;
         }
@@ -199,7 +227,14 @@ const server = createServer(async (request, response) => {
       })
       .map((event) => buildScoreboardEvent(event));
 
-    sendJson(response, 200, { events });
+    sendJson(response, 200, {
+      events,
+      leagues: [
+        {
+          calendar: buildLeagueCalendar(),
+        },
+      ],
+    });
     return;
   }
 

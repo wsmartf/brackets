@@ -2,7 +2,10 @@
 
 ## Depends on
 - Task 01 (store surviving indices + GET /api/survivors)
-- Task 15 (analysis card switcher shell — tab already exists as placeholder)
+
+## Constraints
+- Keep the dropdown limited to teams that still have at least one surviving champion path.
+- Preserve an eliminated previously selected team as a readable state without reintroducing it into the active survivor list.
 
 ## Goal
 Replace the My Team tab placeholder with real content: pick your team, see how many
@@ -46,6 +49,18 @@ Once this ships, replace Survivors as the default active tab.
 - Eliminated teams show a clear eliminated state
 - Browse link resolves to a valid surviving bracket
 - Tab becomes the default active tab
+
+## Current Status
+- Status: Done
+- Last updated: 2026-03-22
+- Notes:
+  - Implemented `MyTeamTab` and made it the default active tab.
+  - Homepage now passes `roundSurvivorCounts` and snapshot history into the switcher.
+  - Survivor browsing uses `/api/survivors` and rotates through cached examples.
+  - Eliminated previously selected teams render a clear eliminated state using the last snapshot where they still had champion equity.
+
+## Next Steps
+- None. Task is complete.
 
 ## Affected Files
 - `components/AnalysisCardSwitcher.tsx` (change default tab)

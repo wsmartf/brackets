@@ -220,6 +220,42 @@ export function extractResults(scoreboard: ESPNScoreboard): ESPNGameResult[] {
   return results;
 }
 
+export function extractScheduledTournamentGames(
+  scoreboard: ESPNScoreboard
+): ESPNScheduledGame[] {
+  const games: ESPNScheduledGame[] = [];
+
+  for (const event of scoreboard.events ?? []) {
+    const eventStatus = event.status?.type;
+    if (eventStatus?.completed || eventStatus?.state !== "pre") {
+      continue;
+    }
+
+    const comp = event.competitions?.[0];
+    if (comp?.type?.abbreviation !== "TRNMNT") continue;
+    if (!comp?.competitors || comp.competitors.length !== 2) continue;
+
+    const [teamA, teamB] = comp.competitors;
+    const nameA = teamA.team.shortDisplayName ?? teamA.team.displayName;
+    const nameB = teamB.team.shortDisplayName ?? teamB.team.displayName;
+
+    games.push({
+      eventId: event.id,
+      eventDate: comp.startDate ?? event.date,
+      status: eventStatus.name ?? "STATUS_SCHEDULED",
+      team1: nameA,
+      team2: nameB,
+    });
+  }
+
+  return games.sort((left, right) => left.eventDate.localeCompare(right.eventDate));
+}
+
+export function getScoreboardCalendarDateKeys(scoreboard: ESPNScoreboard): string[] {
+  const rawDates = scoreboard.leagues?.flatMap((league) => league.calendar ?? []) ?? [];
+  return [...new Set(rawDates.map((value) => value.slice(0, 10).replace(/-/g, "")))].sort();
+}
+
 function normalizeTeamName(name: string): string {
   return name
     .toLowerCase()
@@ -622,19 +658,25 @@ function applyPlayInWinnerIfNeeded(
 
 export interface ESPNScoreboard {
   events?: ESPNEvent[];
+  leagues?: ESPNLeague[];
 }
 
 interface ESPNEvent {
   id: string;
   date: string;
   name: string;
-  status?: { type?: { name: string } };
+  status?: { type?: { name?: string; state?: string; completed?: boolean } };
   competitions?: ESPNCompetition[];
 }
 
 interface ESPNCompetition {
   type?: { abbreviation?: string };
   competitors?: ESPNCompetitor[];
+  startDate?: string;
+}
+
+interface ESPNLeague {
+  calendar?: string[];
 }
 
 interface ESPNCompetitor {
@@ -654,4 +696,12 @@ export interface ESPNGameResult {
   score2: number;
   seed1: number | null;
   seed2: number | null;
+}
+
+export interface ESPNScheduledGame {
+  eventId: string;
+  eventDate: string;
+  status: string;
+  team1: string;
+  team2: string;
 }
