@@ -2,7 +2,9 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "./test-helpers";
 import { initDb, setResult } from "../lib/db";
 import {
+  buildMatchupProbabilityTable,
   computeProbability,
+  computeBracketLikelihood,
   computeBitmasks,
   getBracketSurvivalState,
   buildGameDefinitions,
@@ -186,6 +188,61 @@ describe("getBracketSurvivalState", () => {
     expect(state.alive).toBe(true);
     expect(state.summary.correct).toBe(3);
     expect(state.eliminated_by).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeBracketLikelihood
+// ---------------------------------------------------------------------------
+
+describe("computeBracketLikelihood", () => {
+  test("multiplies only pending pick probabilities", () => {
+    const initialOrder = getInitialOrder();
+    const table = buildMatchupProbabilityTable();
+    const teamA = initialOrder[0];
+    const teamB = initialOrder[1];
+    const teamC = initialOrder[2];
+    const teamD = initialOrder[3];
+    const teamAIndex = initialOrder.indexOf(teamA);
+    const teamBIndex = initialOrder.indexOf(teamB);
+    const teamCIndex = initialOrder.indexOf(teamC);
+    const teamDIndex = initialOrder.indexOf(teamD);
+
+    const picks = [
+      {
+        game_index: 0,
+        round: 64,
+        team1: teamA,
+        team2: teamB,
+        pick: teamA,
+        winner: null,
+        result: "pending" as const,
+      },
+      {
+        game_index: 1,
+        round: 64,
+        team1: teamC,
+        team2: teamD,
+        pick: teamC,
+        winner: null,
+        result: "pending" as const,
+      },
+      {
+        game_index: 2,
+        round: 64,
+        team1: "UNC",
+        team2: "Yale",
+        pick: "UNC",
+        winner: "UNC",
+        result: "alive" as const,
+      },
+    ];
+
+    const expected =
+      table[teamAIndex * initialOrder.length + teamBIndex] *
+      table[teamCIndex * initialOrder.length + teamDIndex];
+
+    expect(computeBracketLikelihood(picks)).toBeCloseTo(expected, 10);
   });
 });
 

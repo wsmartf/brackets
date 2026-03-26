@@ -1,0 +1,342 @@
+{
+  "name": "final-5",
+  "description": "Exported 2026-03-23T15:12:12.861Z — 48 completed game results",
+  "results": [
+    {
+      "game_index": 0,
+      "round": 64,
+      "team1": "Duke",
+      "team2": "Siena",
+      "winner": "Duke"
+    },
+    {
+      "game_index": 1,
+      "round": 64,
+      "team1": "Ohio State",
+      "team2": "TCU",
+      "winner": "TCU"
+    },
+    {
+      "game_index": 2,
+      "round": 64,
+      "team1": "St. John's",
+      "team2": "Northern Iowa",
+      "winner": "St. John's"
+    },
+    {
+      "game_index": 3,
+      "round": 64,
+      "team1": "Kansas",
+      "team2": "Cal Baptist",
+      "winner": "Kansas"
+    },
+    {
+      "game_index": 4,
+      "round": 64,
+      "team1": "Louisville",
+      "team2": "South Florida",
+      "winner": "Louisville"
+    },
+    {
+      "game_index": 5,
+      "round": 64,
+      "team1": "Michigan State",
+      "team2": "North Dakota State",
+      "winner": "Michigan State"
+    },
+    {
+      "game_index": 6,
+      "round": 64,
+      "team1": "UCLA",
+      "team2": "UCF",
+      "winner": "UCLA"
+    },
+    {
+      "game_index": 7,
+      "round": 64,
+      "team1": "UConn",
+      "team2": "Furman",
+      "winner": "UConn"
+    },
+    {
+      "game_index": 8,
+      "round": 64,
+      "team1": "Arizona",
+      "team2": "LIU",
+      "winner": "Arizona"
+    },
+    {
+      "game_index": 9,
+      "round": 64,
+      "team1": "Villanova",
+      "team2": "Utah State",
+      "winner": "Utah State"
+    },
+    {
+      "game_index": 10,
+      "round": 64,
+      "team1": "Wisconsin",
+      "team2": "High Point",
+      "winner": "High Point"
+    },
+    {
+      "game_index": 11,
+      "round": 64,
+      "team1": "Arkansas",
+      "team2": "Hawaii",
+      "winner": "Arkansas"
+    },
+    {
+      "game_index": 12,
+      "round": 64,
+      "team1": "BYU",
+      "team2": "Texas",
+      "winner": "Texas"
+    },
+    {
+      "game_index": 13,
+      "round": 64,
+      "team1": "Gonzaga",
+      "team2": "Kennesaw State",
+      "winner": "Gonzaga"
+    },
+    {
+      "game_index": 14,
+      "round": 64,
+      "team1": "Miami FL",
+      "team2": "Missouri",
+      "winner": "Miami FL"
+    },
+    {
+      "game_index": 15,
+      "round": 64,
+      "team1": "Purdue",
+      "team2": "Queens",
+      "winner": "Purdue"
+    },
+    {
+      "game_index": 16,
+      "round": 64,
+      "team1": "Michigan",
+      "team2": "Howard",
+      "winner": "Michigan"
+    },
+    {
+      "game_index": 17,
+      "round": 64,
+      "team1": "Georgia",
+      "team2": "Saint Louis",
+      "winner": "Saint Louis"
+    },
+    {
+      "game_index": 18,
+      "round": 64,
+      "team1": "Texas Tech",
+      "team2": "Akron",
+      "winner": "Texas Tech"
+    },
+    {
+      "game_index": 19,
+      "round": 64,
+      "team1": "Alabama",
+      "team2": "Hofstra",
+      "winner": "Alabama"
+    },
+    {
+      "game_index": 20,
+      "round": 64,
+      "team1": "Tennessee",
+      "team2": "Miami OH",
+      "winner": "Tennessee"
+    },
+    {
+      "game_index": 21,
+      "round": 64,
+      "team1": "Virginia",
+      "team2": "Wright State",
+      "winner": "Virginia"
+    },
+    {
+      "game_index": 22,
+      "round": 64,
+      "team1": "Kentucky",
+      "team2": "Santa Clara",
+      "winner": "Kentucky"
+    },
+    {
+      "game_index": 23,
+      "round": 64,
+      "team1": "Iowa State",
+      "team2": "Tennessee State",
+      "winner": "Iowa State"
+    },
+    {
+      "game_index": 24,
+      "round": 64,
+      "team1": "Florida",
+      "team2": "Prairie View A&M",
+      "winner": "Florida"
+    },
+    {
+      "game_index": 25,
+      "round": 64,
+      "team1": "Clemson",
+      "team2": "Iowa",
+      "winner": "Iowa"
+    },
+    {
+      "game_index": 26,
+      "round": 64,
+      "team1": "Vanderbilt",
+      "team2": "McNeese",
+      "winner": "Vanderbilt"
+    },
+    {
+      "game_index": 27,
+      "round": 64,
+      "team1": "Nebraska",
+      "team2": "Troy",
+      "winner": "Nebraska"
+    },
+    {
+      "game_index": 28,
+      "round": 64,
+      "team1": "North Carolina",
+      "team2": "VCU",
+      "winner": "VCU"
+    },
+    {
+      "game_index": 29,
+      "round": 64,
+      "team1": "Illinois",
+      "team2": "Penn",
+      "winner": "Illinois"
+    },
+    {
+      "game_index": 30,
+      "round": 64,
+      "team1": "Saint Mary's",
+      "team2": "Texas A&M",
+      "winner": "Texas A&M"
+    },
+    {
+      "game_index": 31,
+      "round": 64,
+      "team1": "Houston",
+      "team2": "Idaho",
+      "winner": "Houston"
+    },
+    {
+      "game_index": 32,
+      "round": 32,
+      "team1": "Duke",
+      "team2": "TCU",
+      "winner": "Duke"
+    },
+    {
+      "game_index": 33,
+      "round": 32,
+      "team1": "St. John's",
+      "team2": "Kansas",
+      "winner": "St. John's"
+    },
+    {
+      "game_index": 34,
+      "round": 32,
+      "team1": "Louisville",
+      "team2": "Michigan State",
+      "winner": "Michigan State"
+    },
+    {
+      "game_index": 35,
+      "round": 32,
+      "team1": "UCLA",
+      "team2": "UConn",
+      "winner": "UConn"
+    },
+    {
+      "game_index": 36,
+      "round": 32,
+      "team1": "Arizona",
+      "team2": "Utah State",
+      "winner": "Arizona"
+    },
+    {
+      "game_index": 37,
+      "round": 32,
+      "team1": "High Point",
+      "team2": "Arkansas",
+      "winner": "Arkansas"
+    },
+    {
+      "game_index": 38,
+      "round": 32,
+      "team1": "Texas",
+      "team2": "Gonzaga",
+      "winner": "Texas"
+    },
+    {
+      "game_index": 39,
+      "round": 32,
+      "team1": "Miami FL",
+      "team2": "Purdue",
+      "winner": "Purdue"
+    },
+    {
+      "game_index": 40,
+      "round": 32,
+      "team1": "Michigan",
+      "team2": "Saint Louis",
+      "winner": "Michigan"
+    },
+    {
+      "game_index": 41,
+      "round": 32,
+      "team1": "Texas Tech",
+      "team2": "Alabama",
+      "winner": "Alabama"
+    },
+    {
+      "game_index": 42,
+      "round": 32,
+      "team1": "Tennessee",
+      "team2": "Virginia",
+      "winner": "Tennessee"
+    },
+    {
+      "game_index": 43,
+      "round": 32,
+      "team1": "Kentucky",
+      "team2": "Iowa State",
+      "winner": "Iowa State"
+    },
+    {
+      "game_index": 44,
+      "round": 32,
+      "team1": "Florida",
+      "team2": "Iowa",
+      "winner": "Iowa"
+    },
+    {
+      "game_index": 45,
+      "round": 32,
+      "team1": "Vanderbilt",
+      "team2": "Nebraska",
+      "winner": "Nebraska"
+    },
+    {
+      "game_index": 46,
+      "round": 32,
+      "team1": "VCU",
+      "team2": "Illinois",
+      "winner": "Illinois"
+    },
+    {
+      "game_index": 47,
+      "round": 32,
+      "team1": "Texas A&M",
+      "team2": "Houston",
+      "winner": "Houston"
+    }
+  ]
+}

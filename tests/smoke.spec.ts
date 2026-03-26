@@ -115,6 +115,49 @@ test.describe("GET /api/survivors", () => {
   });
 });
 
+test.describe("GET /api/survivors?detail=full", () => {
+  test("returns brackets array with enriched shape when total <= 50", async ({ request }) => {
+    const statsResponse = await request.get("/api/stats");
+    const stats = await statsResponse.json() as { remaining: number };
+    test.skip(stats.remaining > 50, "detail=full falls back to index-only when total > 50");
+
+    const response = await request.get("/api/survivors?detail=full");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.brackets)).toBe(true);
+    expect(typeof data.total).toBe("number");
+
+    const brackets = data.brackets as Array<Record<string, unknown>>;
+    if (brackets.length > 0) {
+      const b = brackets[0];
+      expect(typeof b.index).toBe("number");
+      expect(Array.isArray(b.picks)).toBe(true);
+      expect((b.picks as unknown[]).length).toBe(63);
+      expect(typeof b.alive).toBe("boolean");
+      expect(typeof b.likelihood).toBe("number");
+      expect(b.likelihood).toBeGreaterThanOrEqual(0);
+      expect(typeof b.championPick).toBe("string");
+      expect(Array.isArray(b.championshipGame)).toBe(true);
+      expect((b.championshipGame as unknown[]).length).toBe(2);
+      expect(Array.isArray(b.finalFour)).toBe(true);
+    }
+  });
+
+  test("falls back to index-only response when total > 50", async ({ request }) => {
+    const statsResponse = await request.get("/api/stats");
+    const stats = await statsResponse.json() as { remaining: number };
+    test.skip(stats.remaining <= 50, "detail=full returns brackets array when total <= 50");
+
+    const response = await request.get("/api/survivors?detail=full");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.indices)).toBe(true);
+    expect(typeof data.total).toBe("number");
+  });
+});
+
 test.describe("GET /api/future-killers", () => {
   test("returns valid JSON with expected shape", async ({ request }) => {
     const response = await request.get("/api/future-killers");
@@ -131,6 +174,24 @@ test.describe("GET /api/future-killers", () => {
       expect(typeof rows[0].team1).toBe("string");
       expect(typeof rows[0].team2).toBe("string");
       expect(typeof rows[0].guaranteedKills).toBe("number");
+    }
+  });
+});
+
+test.describe("GET /api/final-n-insights", () => {
+  test("returns valid JSON with expected shape", async ({ request }) => {
+    const response = await request.get("/api/final-n-insights");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(data.bestCaseAfter === null || typeof data.bestCaseAfter === "object").toBe(true);
+    expect(Array.isArray(data.milestones)).toBe(true);
+
+    const milestones = data.milestones as Array<Record<string, unknown>>;
+    if (milestones.length > 0) {
+      expect(typeof milestones[0].id).toBe("string");
+      expect(typeof milestones[0].label).toBe("string");
+      expect(typeof milestones[0].probability).toBe("number");
     }
   });
 });
@@ -158,6 +219,28 @@ test.describe("dashboard", () => {
          )
        ).toBeVisible();
      }
+  });
+
+  test("Final N homepage renders when remaining <= 20", async ({ page, request }) => {
+    const stats = await request.get("/api/stats").then((r) => r.json()) as { remaining: number };
+    test.skip(stats.remaining > 20, "Not in Final N mode — standard homepage active");
+
+    await page.goto("/");
+    await expect(page.locator("body")).not.toBeEmpty();
+    await expect(page.getByText(/THE FINAL \d+/)).toBeVisible();
+    await expect(page.getByText("Every survivor, side by side")).toBeVisible();
+    await expect(page.getByText("Remaining Games")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear" }).first()).toBeVisible();
+  });
+
+  test("Standard homepage renders when remaining > 20", async ({ page, request }) => {
+    const stats = await request.get("/api/stats").then((r) => r.json()) as { remaining: number };
+    test.skip(stats.remaining <= 20, "In Final N mode — standard homepage not active");
+
+    await page.goto("/");
+    await expect(page.locator("body")).not.toBeEmpty();
+    // Standard mode has the AnalysisCardSwitcher; Final N mode does not
+    await expect(page.locator("text=THE FINAL")).not.toBeVisible();
   });
 
   test("about page loads", async ({ page }) => {

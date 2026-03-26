@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { addAuditLog, getResult, getResults, setResult } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
-import { resetTournamentCaches } from "@/lib/tournament";
+import { buildCurrentGameDefinitions, resetTournamentCaches } from "@/lib/tournament";
 
 export async function GET() {
   const results = getResults();
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { game_index, round, team1, team2, winner } = body;
+  const { game_index, round, team1, team2, winner, force } = body;
   const previous = typeof game_index === "number" ? getResult(game_index) : null;
 
   if (
@@ -49,6 +49,35 @@ export async function POST(request: Request) {
       { error: "winner must match team1 or team2" },
       { status: 400 }
     );
+  }
+
+  // Validate that team1/team2 match the expected matchup for this game_index.
+  // Pass force: true to bypass this check for genuine admin overrides.
+  if (!force) {
+    const gameDefs = buildCurrentGameDefinitions(getResults());
+    const expectedGame = gameDefs.find((g) => g.game_index === game_index);
+    if (!expectedGame) {
+      return NextResponse.json(
+        { error: `game_index ${game_index} is not a valid game (must be 0–62)` },
+        { status: 400 }
+      );
+    }
+    const isPlaceholder = (t: string) => t.startsWith("Winner of Game");
+    if (!isPlaceholder(expectedGame.team1) && !isPlaceholder(expectedGame.team2)) {
+      const submitted = new Set([team1, team2]);
+      const expected = new Set([expectedGame.team1, expectedGame.team2]);
+      const mismatch = ![...submitted].every((t) => expected.has(t));
+      if (mismatch) {
+        return NextResponse.json(
+          {
+            error: `team1/team2 don't match the expected matchup for game_index ${game_index}`,
+            expected: { team1: expectedGame.team1, team2: expectedGame.team2 },
+            hint: "Pass force: true to override this check",
+          },
+          { status: 409 }
+        );
+      }
+    }
   }
 
   setResult(game_index, round, team1, team2, winner, {

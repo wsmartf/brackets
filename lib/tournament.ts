@@ -58,6 +58,7 @@ export interface GameResultLike {
   team1: string;
   team2: string;
   winner: string | null;
+  updated_at?: string;
 }
 
 export interface BracketPick {
@@ -327,6 +328,32 @@ export function buildMatchupProbabilityTable(): number[] {
   return table;
 }
 
+export function computeBracketLikelihood(picks: BracketPickStatus[]): number {
+  const table = buildMatchupProbabilityTable();
+  const initialOrder = getInitialOrder();
+  const nameToIndex = new Map(initialOrder.map((name, index) => [name, index]));
+
+  let likelihood = 1;
+
+  for (const pick of picks) {
+    if (pick.result !== "pending") {
+      continue;
+    }
+
+    const pickedIndex = nameToIndex.get(pick.pick);
+    const opponentName = pick.pick === pick.team1 ? pick.team2 : pick.team1;
+    const opponentIndex = nameToIndex.get(opponentName);
+
+    if (pickedIndex == null || opponentIndex == null) {
+      continue;
+    }
+
+    likelihood *= table[pickedIndex * initialOrder.length + opponentIndex];
+  }
+
+  return likelihood;
+}
+
 /**
  * Reconstruct a single deterministic bracket from its index.
  *
@@ -385,9 +412,15 @@ export function getBracketSurvivalState(
       .map((result) => [result.game_index, result.winner as string])
   );
 
+  const completionTimeByGame = new Map(
+    knownResults
+      .filter((r) => r.winner && r.updated_at)
+      .map((r) => [r.game_index, r.updated_at as string])
+  );
+
   let alive = true;
-  let eliminatedBy: EliminatedByPick | null = null;
   const summary: BracketSummary = { correct: 0, wrong: 0, pending: 0 };
+  const wrongPicks: Array<{ pick: BracketPick; winner: string }> = [];
 
   const annotatedPicks = picks.map((pick) => {
     const winner = winnersByGame.get(pick.game_index) ?? null;
@@ -412,17 +445,7 @@ export function getBracketSurvivalState(
 
     summary.wrong++;
     alive = false;
-
-    if (!eliminatedBy) {
-      eliminatedBy = {
-        game_index: pick.game_index,
-        round: pick.round,
-        team1: pick.team1,
-        team2: pick.team2,
-        pick: pick.pick,
-        winner,
-      };
-    }
+    wrongPicks.push({ pick, winner });
 
     return {
       ...pick,
@@ -430,6 +453,28 @@ export function getBracketSurvivalState(
       result: "dead" as const,
     };
   });
+
+  // Find the chronologically first elimination. Fall back to lowest game_index
+  // when updated_at is unavailable (e.g. synthetic results in tests).
+  let eliminatedBy: EliminatedByPick | null = null;
+  if (wrongPicks.length > 0) {
+    const first = wrongPicks.reduce((a, b) => {
+      const ta = completionTimeByGame.get(a.pick.game_index);
+      const tb = completionTimeByGame.get(b.pick.game_index);
+      if (ta && tb) return ta <= tb ? a : b;
+      if (ta) return a;
+      if (tb) return b;
+      return a.pick.game_index <= b.pick.game_index ? a : b;
+    });
+    eliminatedBy = {
+      game_index: first.pick.game_index,
+      round: first.pick.round,
+      team1: first.pick.team1,
+      team2: first.pick.team2,
+      pick: first.pick.pick,
+      winner: first.winner,
+    };
+  }
 
   return {
     picks: annotatedPicks,

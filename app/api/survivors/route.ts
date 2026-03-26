@@ -14,14 +14,20 @@
  */
 
 import { NextResponse } from "next/server";
-import { getSurvivorIndices, getSurvivorCount } from "@/lib/db";
-import { getInitialOrder } from "@/lib/tournament";
+import { getResults, getSurvivorCount, getSurvivorIndices } from "@/lib/db";
+import {
+  computeBracketLikelihood,
+  getBracketSurvivalState,
+  getInitialOrder,
+  reconstructBracket,
+} from "@/lib/tournament";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const championName = url.searchParams.get("champion");
+  const detail = url.searchParams.get("detail");
   const limitParam = url.searchParams.get("limit");
   const offsetParam = url.searchParams.get("offset");
   const limit = Math.min(500, Math.max(1, parseInt(limitParam ?? "50", 10) || 50));
@@ -40,8 +46,42 @@ export async function GET(request: Request) {
     championIndex = idx;
   }
 
-  const indices = getSurvivorIndices({ championIndex, limit, offset });
   const total = getSurvivorCount(championIndex);
+  const indices = getSurvivorIndices({ championIndex, limit, offset });
+
+  if (detail === "full" && total <= 50) {
+    const results = getResults();
+    const allIndices =
+      total > 0 ? getSurvivorIndices({ championIndex, limit: total, offset: 0 }) : [];
+    const brackets = allIndices.map((index) => {
+      const bracket = reconstructBracket(index);
+      const survivalState = getBracketSurvivalState(bracket, results);
+      const semifinalOne = survivalState.picks[60];
+      const semifinalTwo = survivalState.picks[61];
+      const championship = survivalState.picks[62];
+
+      return {
+        index,
+        picks: survivalState.picks,
+        alive: survivalState.alive,
+        likelihood: computeBracketLikelihood(survivalState.picks),
+        championPick: championship?.pick ?? "",
+        championshipGame: [
+          championship?.team1 ?? "",
+          championship?.team2 ?? "",
+        ] as [string, string],
+        finalFour: [
+          semifinalOne?.team1 ?? "",
+          semifinalOne?.team2 ?? "",
+          semifinalTwo?.team1 ?? "",
+          semifinalTwo?.team2 ?? "",
+        ].filter(Boolean),
+        eliminatedBy: survivalState.eliminated_by,
+      };
+    });
+
+    return NextResponse.json({ brackets, total });
+  }
 
   return NextResponse.json({ indices, total });
 }

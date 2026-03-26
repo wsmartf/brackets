@@ -1,4 +1,4 @@
-.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke future-killers-stub future-killers-seed refresh-loop rehearse-prod rehearse-prod-copy rehearse-prod-build rehearse-prod-start ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all
+.PHONY: init install dev lint typecheck build analyze analyze-smoke collision-stats collision-stats-smoke bracket-stats bracket-stats-smoke backtest-current-model train-v2-model calibrate-v2 champion-probs bracket-stats-viz uv-sync verify replay-stub replay-smoke future-killers-stub future-killers-seed refresh-loop rehearse-prod rehearse-prod-copy rehearse-prod-build rehearse-prod-start ops-status ops-refresh ops-refresh-no-espn ops-audit ops-espn-names test test-watch test-ui test-ui-headed test-ui-update test-all export-scenario dev-scenario
 
 init: install
 
@@ -118,6 +118,20 @@ ops-audit:
 
 ops-espn-names:
 	node scripts/ops/espn_name_audit.mjs
+
+# Export current DB game results as a named scenario fixture for local dev testing.
+# Usage: make export-scenario NAME=final-5
+# Reads from MARCH_MADNESS_DB_PATH or ./march-madness.db.
+# Writes to scripts/dev/fixtures/${NAME}.json.
+export-scenario:
+	NAME=$(or $(NAME),my-scenario) node --require tsx/cjs scripts/dev/export-scenario.cjs
+
+# Seed a fresh dev DB from a named scenario fixture and start the dev server.
+# Usage: make dev-scenario SCENARIO=final-5
+# Reads scripts/dev/fixtures/${SCENARIO}.json, writes /tmp/brackets-${SCENARIO}.db, runs analysis, starts dev.
+dev-scenario:
+	SCENARIO=$(or $(SCENARIO),my-scenario) node --require tsx/cjs scripts/dev/seed-scenario.cjs && \
+	MARCH_MADNESS_DB_PATH=/tmp/brackets-$(or $(SCENARIO),my-scenario).db make dev
 
 test-ui:
 	npx playwright test

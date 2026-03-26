@@ -226,19 +226,32 @@ function logScale(value: number, min: number, max: number, height: number): numb
 ```
 
 ## Acceptance Criteria
-- [ ] localStorage saves { remaining, survivingIndices, timestamp } on each poll
-- [ ] Returning visitors see "since your last visit" banner with elimination details
-- [ ] Hero number animates from stored count to current (ease-out, ~1.5s)
-- [ ] Eliminated bracket cards animate from alive → dead state (staggered)
-- [ ] First-time visitors see current state immediately, no animation
-- [ ] Survival curve renders log-scale graph from snapshot data
-- [ ] Hover tooltip shows remaining count per data point
-- [ ] All animations are CSS-transition or rAF based (no layout thrashing)
-- [ ] localStorage errors handled gracefully (private browsing, quota)
+- [x] localStorage saves { remaining, survivingIndices, timestamp } on each poll
+- [x] Returning visitors see "since your last visit" banner with elimination details
+- [x] Hero number animates from stored count to current (ease-out, ~1.5s)
+- [x] Eliminated bracket cards animate from alive → dead state (staggered)
+- [x] First-time visitors see current state immediately, no animation
+- [x] Survival curve renders from snapshot data with tuned sizing and scale
+- [x] Hover tooltip shows remaining count per data point
+- [x] All animations are CSS-transition or rAF based (no layout thrashing)
+- [x] localStorage errors handled gracefully (private browsing, quota)
 - [ ] `make verify` passes
 
+## Current Status
+- Status: In progress
+- Last updated: 2026-03-23
+- Notes:
+  - Survival curve is being tuned for readability with a power scale, clearer axis labels, and an x-axis capped at the latest completed game.
+  - Repo-wide `make verify` is still blocked by pre-existing lint errors outside this chart work, especially in `hooks/useTrackedBrackets.ts`.
+
+## Next Steps
+- Finish the current survival-curve readability pass and verify with tests/typecheck.
+- Decide whether the power scale is good enough or if a hybrid/symlog treatment is still needed.
+
 ## Affected Files
+- `components/FinalNHomepage.tsx`
+- `components/SurvivalCurve.tsx`
+- `tasks/04e-polish.md`
 - `hooks/useReturningVisitor.ts` — new
-- `components/SurvivalCurve.tsx` — new
 - `components/BracketCard.tsx` — add animateElimination prop
 - `components/FinalNHomepage.tsx` — wire up animations and banner
