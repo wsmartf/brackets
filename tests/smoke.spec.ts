@@ -227,10 +227,14 @@ test.describe("dashboard", () => {
 
     await page.goto("/");
     await expect(page.locator("body")).not.toBeEmpty();
-    await expect(page.getByText(/THE FINAL \d+/)).toBeVisible();
-    await expect(page.getByText("Every survivor, side by side")).toBeVisible();
-    await expect(page.getByText("Remaining Games")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Clear" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("PERFECT");
+    await expect(page.getByText("Browse the universe")).toBeVisible();
+
+    if (stats.remaining === 0) {
+      await expect(page.getByText("Tournament post-mortem")).toBeVisible();
+    } else {
+      await expect(page.getByText("Every survivor, side by side")).toBeVisible();
+    }
   });
 
   test("Standard homepage renders when remaining > 20", async ({ page, request }) => {

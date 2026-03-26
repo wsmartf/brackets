@@ -261,14 +261,14 @@ export default function FinalNHomepage({
               I created 1 billion March Madness brackets.
             </p>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-none text-white">
-              <span className={`block ${isOver ? "text-red-400" : "text-white"}`}>
+              <span className={`block ${isOver ? "text-red-400" : "text-[#ff5a36]"}`}>
                 {displayRemaining} PERFECT
               </span>
               <span className="block text-white/72">
-                {isSingular ? "BRACKET REMAINS" : "BRACKETS REMAIN"}
+                {isSingular ? "BRACKET LEFT" : "BRACKETS LEFT"}
               </span>
             </h1>
-            <div className="mt-5 space-y-3 max-w-2xl text-base sm:text-lg text-white/58">
+            <div className="mt-4 max-w-2xl text-base sm:mt-5 sm:text-lg text-white/58">
               {isOver ? (
                 <>
                   <p>Not one of our 1 billion brackets survived the tournament.</p>
@@ -281,17 +281,19 @@ export default function FinalNHomepage({
                   )}
                 </>
               ) : (
-                <>
-                  <p>
-                    Having any perfect brackets this deep is already wildly unlikely.
-                  </p>
+                <p>
+                  Having any perfect brackets this deep is already wildly unlikely.
+                  {" "}
                   {isAnalysisRunning ? (
                     <span className="inline-block animate-pulse text-white/75">
-                      recomputing against the latest results...
+                      Recomputing against the latest results...
                     </span>
-                  ) : finalNInsights?.bestCaseAfter &&
-                  finalNInsights.bestCaseAfter.remaining !== stats.remaining ? (
-                    <p>
+                  ) : finalNInsights === null ? (
+                    <span className="inline-block animate-pulse text-white/75">
+                      Loading best-case outlook...
+                    </span>
+                  ) : finalNInsights.bestCaseAfter ? (
+                    <>
                       Best case after {finalNInsights.bestCaseAfter.label}:{" "}
                       <span className="font-medium text-white/82">
                         {finalNInsights.bestCaseAfter.remaining.toLocaleString()} perfect bracket
@@ -299,11 +301,11 @@ export default function FinalNHomepage({
                         {finalNInsights.bestCaseAfter.remaining === 1 ? "remains" : "remain"}
                       </span>
                       .
-                    </p>
+                    </>
                   ) : (
-                    <p>They probably will not stay perfect much longer.</p>
+                    <>They probably will not stay perfect much longer.</>
                   )}
-                </>
+                </p>
               )}
             </div>
           </div>
@@ -433,10 +435,11 @@ export default function FinalNHomepage({
       <section className="px-6 py-8">
         <div className="max-w-5xl mx-auto">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/40 mb-2">
+            <p className="text-xs uppercase tracking-[0.15em] text-white/40">
               Browse the universe
             </p>
-            <p className="text-white/50 mt-2 text-sm">
+            <h2 className="mt-1 text-2xl font-bold text-white">Open any bracket by number</h2>
+            <p className="mt-2 text-sm text-white/50">
               Every integer 0–999,999,999 is a bracket.
             </p>
 

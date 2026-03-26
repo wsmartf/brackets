@@ -426,9 +426,11 @@ function BracketLabel({
 function ClearSelectionsButton({
   disabled,
   onClear,
+  className = "",
 }: {
   disabled: boolean;
   onClear: () => void;
+  className?: string;
 }) {
   return (
     <button
@@ -439,7 +441,7 @@ function ClearSelectionsButton({
         disabled
           ? "text-white/30"
           : "text-white/45 hover:bg-white/[0.06] hover:text-white/75"
-      }`}
+      } ${className}`}
     >
       Clear
     </button>
@@ -690,11 +692,15 @@ function MobileGrid({
           <button
             type="button"
             onClick={onToggleOutcomes}
-            className="text-[10px] text-white/40 hover:text-white/65 transition-colors"
+            className="inline-flex min-h-9 items-center rounded-full px-3 text-xs font-medium text-white/50 transition-colors hover:bg-white/[0.06] hover:text-white/75"
           >
             ← Hide
           </button>
-          <ClearSelectionsButton disabled={toggles.size === 0} onClear={onClearSelections} />
+          <ClearSelectionsButton
+            disabled={toggles.size === 0}
+            onClear={onClearSelections}
+            className="h-9 px-3 text-xs"
+          />
         </div>
       )}
     </div>
@@ -919,7 +925,12 @@ export default function BracketPathVisualizer({
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <p className="text-xs uppercase tracking-[0.15em] text-white/35">Bracket Paths</p>
-          <p className="mt-1 text-sm text-white/50 hidden sm:block">
+          <h2 className="mt-1 text-2xl font-bold text-white">Trace every survivor</h2>
+          <div className="mt-2 space-y-0.5 text-sm text-white/50 sm:hidden">
+            <p>Each column is a bracket.</p>
+            <p>Tap any team to trace it, or pick outcomes and see which brackets survive.</p>
+          </div>
+          <p className="mt-2 text-sm text-white/50 hidden sm:block">
             Choose game outcomes to see which brackets stay alive. Click a bracket name on the left to trace its path.
           </p>
         </div>
