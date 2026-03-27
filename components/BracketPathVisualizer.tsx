@@ -3,14 +3,13 @@
 import { useMemo, useState } from "react";
 import tournamentData from "@/data/tournament-2026.json";
 import type { GameResult } from "@/hooks/useHomepageData";
-import type { TrackedBracket } from "@/hooks/useTrackedBrackets";
-import type { FutureKillerRow } from "@/lib/future-killers";
+import type { PathBracket } from "@/lib/path-brackets";
+import type { PendingGameRow } from "@/lib/pending-games";
 
 interface Props {
-  trackedBrackets: TrackedBracket[];
+  brackets: PathBracket[];
   results: GameResult[];
-  futureKillers: FutureKillerRow[];
-  now: number;
+  pendingGames: PendingGameRow[];
 }
 
 // "solid": bracket committed here — completed fact or correctly-toggled hypothesis
@@ -27,8 +26,10 @@ interface GameColumn {
   sameMatchup: boolean;
   isCompleted: boolean;
   winner: string | null;
+  phase: "live" | "upcoming" | "unknown";
   scheduledAt: string | null;
-  sortKey: number;
+  liveDetail: string | null;
+  liveSortValue: number | null;
 }
 
 const ROUND_LABELS: Record<number, string> = {
@@ -54,12 +55,10 @@ function formatRound(round: number): string {
   return ROUND_LABELS[round] ?? `Round ${round}`;
 }
 
-function formatShortTime(scheduledAt: string | null, now: number): string | null {
+function formatShortTime(scheduledAt: string | null): string | null {
   if (!scheduledAt) return null;
   const date = new Date(scheduledAt);
   if (!Number.isFinite(date.getTime())) return null;
-  const elapsed = now - date.getTime();
-  if (elapsed > 0 && elapsed < 3 * 60 * 60 * 1000) return "In Progress";
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     hour: "numeric",
@@ -109,26 +108,26 @@ function TeamOptionLabel({
 // ── Data helpers ──────────────────────────────────────────────────────────────
 
 function buildColumns(
-  trackedBrackets: TrackedBracket[],
+  brackets: PathBracket[],
   results: GameResult[],
-  futureKillers: FutureKillerRow[]
+  pendingGames: PendingGameRow[]
 ): GameColumn[] {
-  if (trackedBrackets.length === 0) return [];
+  if (brackets.length === 0) return [];
 
   const resultsByIndex = new Map(results.map((r) => [r.game_index, r]));
-  const scheduledByIndex = new Map(futureKillers.map((g) => [g.gameIndex, g]));
+  const pendingByIndex = new Map(pendingGames.map((g) => [g.gameIndex, g]));
 
   const gameIndices = new Set<number>();
-  for (const b of trackedBrackets) {
+  for (const b of brackets) {
     for (const [gi] of b.picks) gameIndices.add(gi);
   }
 
   const all: GameColumn[] = [];
   for (const gameIndex of gameIndices) {
     const result = resultsByIndex.get(gameIndex);
-    const scheduled = scheduledByIndex.get(gameIndex);
+    const pending = pendingByIndex.get(gameIndex);
 
-    const matchups = trackedBrackets
+    const matchups = brackets
       .map((b) => b.picks.get(gameIndex))
       .filter(Boolean)
       .map((p) => `${p!.team1}|||${p!.team2}`);
@@ -138,7 +137,7 @@ function buildColumns(
 
     const isCompleted = Boolean(result?.winner);
     const round =
-      result?.round ?? scheduled?.round ?? trackedBrackets[0]?.picks.get(gameIndex)?.round ?? 0;
+      result?.round ?? pending?.round ?? brackets[0]?.picks.get(gameIndex)?.round ?? 0;
 
     all.push({
       gameIndex,
@@ -148,20 +147,42 @@ function buildColumns(
       sameMatchup,
       isCompleted,
       winner: result?.winner ?? null,
-      scheduledAt: scheduled?.scheduledAt ?? null,
-      sortKey: isCompleted
-        ? new Date(result!.updated_at).getTime()
-        : scheduled?.scheduledAt
-          ? new Date(scheduled.scheduledAt).getTime()
-          : Infinity,
+      phase: pending?.phase ?? "unknown",
+      scheduledAt: pending?.scheduledAt ?? null,
+      liveDetail: pending?.liveDetail ?? null,
+      liveSortValue: pending?.liveSortValue ?? null,
     });
   }
 
-  // Sort: completed first (by finish time), then upcoming (by scheduled time).
-  // gameIndex is the stable tiebreaker.
   all.sort((a, b) => {
-    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? -1 : 1;
-    if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
+    const bucket = (column: GameColumn) => {
+      if (column.isCompleted) return 0;
+      if (column.phase === "live") return 1;
+      if (column.phase === "upcoming") return 2;
+      return 3;
+    };
+
+    const bucketDiff = bucket(a) - bucket(b);
+    if (bucketDiff !== 0) return bucketDiff;
+
+    if (a.isCompleted && b.isCompleted) {
+      const completedDiff =
+        new Date(a.winner ? resultsByIndex.get(a.gameIndex)?.updated_at ?? 0 : 0).getTime() -
+        new Date(b.winner ? resultsByIndex.get(b.gameIndex)?.updated_at ?? 0 : 0).getTime();
+      if (completedDiff !== 0) return completedDiff;
+    }
+
+    if (a.phase === "live" && b.phase === "live") {
+      const liveDiff = (b.liveSortValue ?? -1) - (a.liveSortValue ?? -1);
+      if (liveDiff !== 0) return liveDiff;
+    }
+
+    if (a.phase !== "unknown" || b.phase !== "unknown") {
+      const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Infinity;
+      const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
+      if (aTime !== bTime) return aTime - bTime;
+    }
+
     return a.gameIndex - b.gameIndex;
   });
 
@@ -187,7 +208,7 @@ function getConsecutiveBoundaryIdx(
 
 
 function computeCellStates(
-  bracket: TrackedBracket,
+  bracket: PathBracket,
   columns: GameColumn[],
   toggles: Map<number, string>,
   consecutiveBoundaryIdx: number
@@ -284,7 +305,6 @@ function ColumnHeader({
   col,
   toggles,
   onToggle,
-  now,
   isNextStep,
   shouldPulse,
   isDimmed,
@@ -292,13 +312,12 @@ function ColumnHeader({
   col: GameColumn;
   toggles: Map<number, string>;
   onToggle: (gameIndex: number, team: string) => void;
-  now: number;
   isNextStep?: boolean;
   shouldPulse?: boolean;
   isDimmed?: boolean;
 }) {
-  const timeLabel = formatShortTime(col.scheduledAt, now);
-  const isLive = timeLabel === "In Progress";
+  const timeLabel = formatShortTime(col.scheduledAt);
+  const isLive = col.phase === "live";
 
   if (col.isCompleted) {
     return (
@@ -340,6 +359,11 @@ function ColumnHeader({
           {isLive ? " · Live" : ""}
         </span>
       </div>
+      {isLive && col.liveDetail && (
+        <span className="text-[10px] text-red-300/70 truncate text-center">
+          {col.liveDetail}
+        </span>
+      )}
       {col.sameMatchup ? (
         <div className="flex gap-0.5 rounded-lg border border-white/10 bg-white/[0.03] p-0.5">
           {[col.team1, col.team2].map((team) => {
@@ -379,7 +403,7 @@ function BracketLabel({
   onClick,
   isActive,
 }: {
-  bracket: TrackedBracket;
+  bracket: PathBracket;
   onClick: () => void;
   isActive: boolean;
 }) {
@@ -461,9 +485,8 @@ function DesktopGrid({
   onToggle,
   onClearSelections,
   onBracketClick,
-  now,
 }: {
-  sortedBrackets: TrackedBracket[];
+  sortedBrackets: PathBracket[];
   bracketStates: CellState[][];
   columns: GameColumn[];
   toggles: Map<number, string>;
@@ -472,8 +495,7 @@ function DesktopGrid({
   activeBracketIndex: number | null;
   onToggle: (gameIndex: number, team: string) => void;
   onClearSelections: () => void;
-  onBracketClick: (bracket: TrackedBracket) => void;
-  now: number;
+  onBracketClick: (bracket: PathBracket) => void;
 }) {
   const totalW = columns.reduce(
     (sum, c) => sum + (c.isCompleted ? COMPLETED_COL_W : UPCOMING_COL_W),
@@ -501,7 +523,6 @@ function DesktopGrid({
                 col={col}
                 toggles={toggles}
                 onToggle={onToggle}
-                now={now}
                 isNextStep={idx === consecutiveBoundaryIdx && idx < columns.length}
                 shouldPulse={!hasInteracted}
                 isDimmed={idx > consecutiveBoundaryIdx}
@@ -570,11 +591,11 @@ function MobileBracketCells({
   totalRows,
   onBracketClick,
 }: {
-  sortedBrackets: TrackedBracket[];
+  sortedBrackets: PathBracket[];
   bracketStates: CellState[][];
   rowIdx: number;
   totalRows: number;
-  onBracketClick: (bracket: TrackedBracket) => void;
+  onBracketClick: (bracket: PathBracket) => void;
 }) {
   return (
     <>
@@ -628,9 +649,8 @@ function MobileGrid({
   onToggleOutcomes,
   onClearSelections,
   onBracketClick,
-  now,
 }: {
-  sortedBrackets: TrackedBracket[];
+  sortedBrackets: PathBracket[];
   bracketStates: CellState[][];
   columns: GameColumn[];
   toggles: Map<number, string>;
@@ -641,8 +661,7 @@ function MobileGrid({
   onToggle: (gameIndex: number, team: string) => void;
   onToggleOutcomes: () => void;
   onClearSelections: () => void;
-  onBracketClick: (bracket: TrackedBracket) => void;
-  now: number;
+  onBracketClick: (bracket: PathBracket) => void;
 }) {
   // Shared bracket name header (used in both modes)
   const bracketNameHeader = (
@@ -751,8 +770,8 @@ function MobileGrid({
 
         {/* Game rows */}
         {columns.map((col, rowIdx) => {
-          const timeLabel = formatShortTime(col.scheduledAt, now);
-          const isLive = timeLabel === "In Progress";
+          const timeLabel = formatShortTime(col.scheduledAt);
+          const isLive = col.phase === "live";
           const selected = toggles.get(col.gameIndex);
           const isNextStep = rowIdx === consecutiveBoundaryIdx && !col.isCompleted;
           const isDimmed = rowIdx > consecutiveBoundaryIdx && !col.isCompleted;
@@ -776,9 +795,13 @@ function MobileGrid({
                     {formatRound(col.round)}{isLive ? " · Live" : ""}
                   </span>
                 </div>
-                {timeLabel && !isLive && (
+                {isLive && col.liveDetail ? (
+                  <span className="text-[9px] text-red-300/70 truncate text-center">
+                    {col.liveDetail}
+                  </span>
+                ) : timeLabel && !isLive ? (
                   <span className="text-[9px] text-white/25 truncate text-center">{timeLabel}</span>
-                )}
+                ) : null}
                 {col.isCompleted ? (
                   <span className="text-[10px] font-medium text-white/50 text-center">
                     {abbreviate(col.winner ?? "?")} ✓
@@ -826,15 +849,14 @@ function MobileGrid({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function BracketPathVisualizer({
-  trackedBrackets,
+  brackets,
   results,
-  futureKillers,
-  now,
+  pendingGames,
 }: Props) {
 
   const columns = useMemo(
-    () => buildColumns(trackedBrackets, results, futureKillers),
-    [trackedBrackets, results, futureKillers]
+    () => buildColumns(brackets, results, pendingGames),
+    [brackets, results, pendingGames]
   );
 
   const [toggles, setToggles] = useState<Map<number, string>>(() => new Map());
@@ -849,13 +871,13 @@ export default function BracketPathVisualizer({
 
   const sortedBrackets = useMemo(
     () =>
-      [...trackedBrackets].sort((a, b) => {
+      [...brackets].sort((a, b) => {
         const aAlive = a.eliminatedAtGame === null ? 1 : 0;
         const bAlive = b.eliminatedAtGame === null ? 1 : 0;
         if (aAlive !== bAlive) return bAlive - aAlive;
         return b.likelihood - a.likelihood;
       }),
-    [trackedBrackets]
+    [brackets]
   );
 
   const bracketStates = useMemo(
@@ -886,7 +908,7 @@ export default function BracketPathVisualizer({
     setToggles(new Map());
   }
 
-  function handleBracketClick(bracket: TrackedBracket) {
+  function handleBracketClick(bracket: PathBracket) {
     const toggleable = columns.filter((c) => !c.isCompleted && c.sameMatchup);
     const isFullySelected =
       toggleable.length > 0 &&
@@ -912,7 +934,7 @@ export default function BracketPathVisualizer({
     }
   }
 
-  if (trackedBrackets.length === 0) {
+  if (brackets.length === 0) {
     return (
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/45">
         Loading bracket paths…
@@ -948,7 +970,6 @@ export default function BracketPathVisualizer({
           onToggle={handleToggle}
           onClearSelections={handleClearSelections}
           onBracketClick={handleBracketClick}
-          now={now}
         />
       </div>
 
@@ -966,7 +987,6 @@ export default function BracketPathVisualizer({
           onToggleOutcomes={() => setShowOutcomes((v) => !v)}
           onClearSelections={handleClearSelections}
           onBracketClick={handleBracketClick}
-          now={now}
         />
       </div>
     </div>

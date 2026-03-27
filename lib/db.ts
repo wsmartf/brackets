@@ -114,6 +114,12 @@ export interface EliminationImpact {
   createdAt: string;
 }
 
+export interface FinalDisplayCohort {
+  threshold: number;
+  indices: number[];
+  frozenAt: string;
+}
+
 // ============================================================
 // Database Singleton
 // ============================================================
@@ -356,6 +362,49 @@ export function setStats(key: string, value: string): void {
        value = excluded.value,
        updated_at = excluded.updated_at`
   ).run(key, value);
+}
+
+export function deleteStat(key: string): void {
+  initDb();
+  const db = getDb();
+  db.prepare("DELETE FROM stats WHERE key = ?").run(key);
+}
+
+const FINAL_DISPLAY_COHORT_KEY = "final_display_cohort";
+
+export function getFinalDisplayCohort(): FinalDisplayCohort | null {
+  const raw = getStats(FINAL_DISPLAY_COHORT_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<FinalDisplayCohort>;
+    if (
+      typeof parsed.threshold !== "number" ||
+      !Array.isArray(parsed.indices) ||
+      parsed.indices.some((value) => !Number.isInteger(value)) ||
+      typeof parsed.frozenAt !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      threshold: parsed.threshold,
+      indices: parsed.indices,
+      frozenAt: parsed.frozenAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setFinalDisplayCohort(input: FinalDisplayCohort): void {
+  setStats(FINAL_DISPLAY_COHORT_KEY, JSON.stringify(input));
+}
+
+export function clearFinalDisplayCohort(): void {
+  deleteStat(FINAL_DISPLAY_COHORT_KEY);
 }
 
 export function addAuditLog(action: string, details: Record<string, unknown>): void {

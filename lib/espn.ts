@@ -251,6 +251,43 @@ export function extractScheduledTournamentGames(
   return games.sort((left, right) => left.eventDate.localeCompare(right.eventDate));
 }
 
+export function extractPendingTournamentGames(
+  scoreboard: ESPNScoreboard
+): ESPNPendingGame[] {
+  const games: ESPNPendingGame[] = [];
+
+  for (const event of scoreboard.events ?? []) {
+    const eventStatus = event.status;
+    const eventType = eventStatus?.type;
+    if (eventType?.completed || (eventType?.state !== "pre" && eventType?.state !== "in")) {
+      continue;
+    }
+
+    const comp = event.competitions?.[0];
+    if (comp?.type?.abbreviation !== "TRNMNT") continue;
+    if (!comp?.competitors || comp.competitors.length !== 2) continue;
+
+    const [teamA, teamB] = comp.competitors;
+    const nameA = teamA.team.shortDisplayName ?? teamA.team.displayName;
+    const nameB = teamB.team.shortDisplayName ?? teamB.team.displayName;
+    const status = comp.status ?? eventStatus;
+
+    games.push({
+      eventId: event.id,
+      eventDate: comp.startDate ?? event.date,
+      status: eventType.name ?? "STATUS_SCHEDULED",
+      state: eventType.state ?? "pre",
+      team1: nameA,
+      team2: nameB,
+      clock: status?.clock ?? null,
+      period: status?.period ?? null,
+      detail: status?.type?.shortDetail ?? status?.type?.detail ?? null,
+    });
+  }
+
+  return games.sort((left, right) => left.eventDate.localeCompare(right.eventDate));
+}
+
 export function getScoreboardCalendarDateKeys(scoreboard: ESPNScoreboard): string[] {
   const rawDates = scoreboard.leagues?.flatMap((league) => league.calendar ?? []) ?? [];
   return [...new Set(rawDates.map((value) => value.slice(0, 10).replace(/-/g, "")))].sort();
@@ -665,7 +702,7 @@ interface ESPNEvent {
   id: string;
   date: string;
   name: string;
-  status?: { type?: { name?: string; state?: string; completed?: boolean } };
+  status?: ESPNStatus;
   competitions?: ESPNCompetition[];
 }
 
@@ -673,6 +710,7 @@ interface ESPNCompetition {
   type?: { abbreviation?: string };
   competitors?: ESPNCompetitor[];
   startDate?: string;
+  status?: ESPNStatus;
 }
 
 interface ESPNLeague {
@@ -684,6 +722,18 @@ interface ESPNCompetitor {
   score: string;
   winner: boolean;
   curatedRank?: { current: number };
+}
+
+interface ESPNStatus {
+  clock?: number;
+  period?: number;
+  type?: {
+    name?: string;
+    state?: string;
+    completed?: boolean;
+    detail?: string;
+    shortDetail?: string;
+  };
 }
 
 export interface ESPNGameResult {
@@ -704,4 +754,11 @@ export interface ESPNScheduledGame {
   status: string;
   team1: string;
   team2: string;
+}
+
+export interface ESPNPendingGame extends ESPNScheduledGame {
+  state: string;
+  clock: number | null;
+  period: number | null;
+  detail: string | null;
 }

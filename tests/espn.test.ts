@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  extractPendingTournamentGames,
   extractResults,
   extractScheduledTournamentGames,
   fetchAndQueueEspnResults,
@@ -257,6 +258,107 @@ describe("extractScheduledTournamentGames", () => {
         status: "STATUS_SCHEDULED",
         team1: "C",
         team2: "D",
+      },
+    ]);
+  });
+});
+
+describe("extractPendingTournamentGames", () => {
+  test("includes live and scheduled tournament games with live details", () => {
+    const scoreboard: ESPNScoreboard = {
+      events: [
+        {
+          id: "ev-live",
+          date: "2026-03-26T23:10Z",
+          name: "Live Game",
+          status: {
+            clock: 501,
+            period: 1,
+            type: {
+              name: "STATUS_IN_PROGRESS",
+              state: "in",
+              completed: false,
+              shortDetail: "8:21 - 1st",
+            },
+          },
+          competitions: [
+            {
+              type: { abbreviation: "TRNMNT" },
+              startDate: "2026-03-26T23:10Z",
+              status: {
+                clock: 501,
+                period: 1,
+                type: {
+                  name: "STATUS_IN_PROGRESS",
+                  state: "in",
+                  completed: false,
+                  shortDetail: "8:21 - 1st",
+                },
+              },
+              competitors: [
+                {
+                  team: { displayName: "Purdue", shortDisplayName: "Purdue", abbreviation: "PUR" },
+                  score: "21",
+                  winner: false,
+                },
+                {
+                  team: { displayName: "Texas", shortDisplayName: "Texas", abbreviation: "TEX" },
+                  score: "18",
+                  winner: false,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "ev-pre",
+          date: "2026-03-27T01:45Z",
+          name: "Upcoming Game",
+          status: { type: { name: "STATUS_SCHEDULED", state: "pre", completed: false } },
+          competitions: [
+            {
+              type: { abbreviation: "TRNMNT" },
+              startDate: "2026-03-27T01:45Z",
+              competitors: [
+                {
+                  team: { displayName: "Arizona", shortDisplayName: "Arizona", abbreviation: "ARIZ" },
+                  score: "0",
+                  winner: false,
+                },
+                {
+                  team: { displayName: "Arkansas", shortDisplayName: "Arkansas", abbreviation: "ARK" },
+                  score: "0",
+                  winner: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(extractPendingTournamentGames(scoreboard)).toEqual([
+      {
+        eventId: "ev-live",
+        eventDate: "2026-03-26T23:10Z",
+        status: "STATUS_IN_PROGRESS",
+        state: "in",
+        team1: "Purdue",
+        team2: "Texas",
+        clock: 501,
+        period: 1,
+        detail: "8:21 - 1st",
+      },
+      {
+        eventId: "ev-pre",
+        eventDate: "2026-03-27T01:45Z",
+        status: "STATUS_SCHEDULED",
+        state: "pre",
+        team1: "Arizona",
+        team2: "Arkansas",
+        clock: null,
+        period: null,
+        detail: null,
       },
     ]);
   });

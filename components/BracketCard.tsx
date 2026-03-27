@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { FutureKillerRow } from "@/lib/future-killers";
+import type { PendingGameRow } from "@/lib/pending-games";
 import type { BracketPickStatus, EliminatedByPick } from "@/lib/tournament";
 
 interface BracketCardProps {
@@ -14,7 +14,7 @@ interface BracketCardProps {
   eliminatedBy: EliminatedByPick | null;
   likelihood: number;
   pendingPicks: BracketPickStatus[];
-  scheduledGames: FutureKillerRow[];
+  pendingGames: PendingGameRow[];
   accentColor: string;
   animateElimination?: boolean;
   animationDelayMs?: number;
@@ -66,30 +66,24 @@ function formatRound(round: number): string {
 
 function getNextNeed(
   pendingPicks: BracketPickStatus[],
-  scheduledGames: FutureKillerRow[]
+  pendingGames: PendingGameRow[]
 ): { team: string; opponent: string; when: string } | null {
-  const scheduledByGameIndex = new Map(
-    scheduledGames.map((game) => [game.gameIndex, game])
+  const pendingByGameIndex = new Map(pendingGames.map((game) => [game.gameIndex, game]));
+  const sortOrder = new Map(pendingGames.map((game, index) => [game.gameIndex, index]));
+  const sortedPicks = [...pendingPicks].sort(
+    (a, b) => (sortOrder.get(a.game_index) ?? Number.POSITIVE_INFINITY) -
+      (sortOrder.get(b.game_index) ?? Number.POSITIVE_INFINITY) ||
+      a.game_index - b.game_index
   );
-  const sortedPicks = [...pendingPicks].sort((a, b) => {
-    const aScheduledAt = scheduledByGameIndex.get(a.game_index)?.scheduledAt;
-    const bScheduledAt = scheduledByGameIndex.get(b.game_index)?.scheduledAt;
-    const aSortKey = aScheduledAt ? new Date(aScheduledAt).getTime() : Number.POSITIVE_INFINITY;
-    const bSortKey = bScheduledAt ? new Date(bScheduledAt).getTime() : Number.POSITIVE_INFINITY;
-
-    if (aSortKey !== bSortKey) {
-      return aSortKey - bSortKey;
-    }
-
-    return a.game_index - b.game_index;
-  });
 
   for (const pick of sortedPicks) {
     const opponent = pick.pick === pick.team1 ? pick.team2 : pick.team1;
-    const scheduled = scheduledByGameIndex.get(pick.game_index);
-    const when = scheduled?.scheduledAt
-      ? formatDay(scheduled.scheduledAt) ?? formatRound(pick.round)
-      : formatRound(pick.round);
+    const pending = pendingByGameIndex.get(pick.game_index);
+    const when = pending?.phase === "live"
+      ? pending.liveDetail ?? "Live"
+      : pending?.scheduledAt
+        ? formatDay(pending.scheduledAt) ?? formatRound(pick.round)
+        : formatRound(pick.round);
 
     return { team: pick.pick, opponent, when };
   }
@@ -132,7 +126,7 @@ export default function BracketCard({
   eliminatedBy,
   likelihood,
   pendingPicks,
-  scheduledGames,
+  pendingGames,
   accentColor,
   animateElimination = false,
   animationDelayMs = 0,
@@ -181,7 +175,7 @@ export default function BracketCard({
     };
   }, [showOddsInfo]);
 
-  const nextNeed = getNextNeed(pendingPicks, scheduledGames);
+  const nextNeed = getNextNeed(pendingPicks, pendingGames);
   const opponent =
     championshipGame[0] === championPick ? championshipGame[1] : championshipGame[0];
   const isVisuallyAlive = alive || (animateElimination && !showDead);

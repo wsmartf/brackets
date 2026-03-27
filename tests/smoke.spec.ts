@@ -196,6 +196,19 @@ test.describe("GET /api/final-n-insights", () => {
   });
 });
 
+test.describe("GET /api/final-n-state", () => {
+  test("returns valid JSON with expected shape", async ({ request }) => {
+    const response = await request.get("/api/final-n-state");
+    expect(response.ok()).toBe(true);
+
+    const data = await response.json() as Record<string, unknown>;
+    expect(Array.isArray(data.survivors)).toBe(true);
+    expect(Array.isArray(data.displayBrackets)).toBe(true);
+    expect(Array.isArray(data.pendingGames)).toBe(true);
+    expect(data.finalNInsights === null || typeof data.finalNInsights === "object").toBe(true);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Page load smoke tests
 // ---------------------------------------------------------------------------

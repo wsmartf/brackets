@@ -33,6 +33,7 @@ import {
   setResult,
 } from "@/lib/db";
 import { fetchAndQueueEspnResults } from "@/lib/espn";
+import { syncFinalDisplayCohortFromCurrentSurvivors } from "@/lib/final-display-cohort";
 import { resetTournamentCaches } from "@/lib/tournament";
 
 async function processPendingResultEvents() {
@@ -83,6 +84,10 @@ async function runRefresh(espnSummary: {
   try {
     let lastStats: Awaited<ReturnType<typeof runAnalysis>> | null = null;
     let processedResultEvents = 0;
+
+    // Freeze the canonical Final Five cohort before applying any new results.
+    // This preserves the pre-elimination roster across 5 -> N transitions.
+    syncFinalDisplayCohortFromCurrentSurvivors();
 
     const processingSummary = await processPendingResultEvents();
     processedResultEvents = processingSummary.processed;

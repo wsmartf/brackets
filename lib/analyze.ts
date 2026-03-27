@@ -27,6 +27,7 @@ import {
   replaceSurvivingIndices,
   setStats,
 } from "./db";
+import { syncFinalDisplayCohort } from "./final-display-cohort";
 
 // ============================================================
 // Constants
@@ -177,6 +178,7 @@ export async function runAnalysis(options: RunAnalysisOptions = {}): Promise<Ana
 
   // If no games played yet, all brackets are valid — skip the expensive computation
   if (gamesCompleted === 0) {
+    syncFinalDisplayCohort(NUM_BRACKETS, []);
     const stats: AnalysisResult = {
       remaining: NUM_BRACKETS,
       totalBrackets: NUM_BRACKETS,
@@ -285,6 +287,11 @@ export async function runAnalysis(options: RunAnalysisOptions = {}): Promise<Ana
     roundSurvivorCounts = derived.roundSurvivorCounts;
     gamePickCounts = derived.gamePickCounts;
   }
+
+  syncFinalDisplayCohort(
+    totalRemaining,
+    allSurvivorIndices.map((entry) => entry.index)
+  );
 
   const stats: AnalysisResult = {
     remaining: totalRemaining,

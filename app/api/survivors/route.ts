@@ -15,12 +15,8 @@
 
 import { NextResponse } from "next/server";
 import { getResults, getSurvivorCount, getSurvivorIndices } from "@/lib/db";
-import {
-  computeBracketLikelihood,
-  getBracketSurvivalState,
-  getInitialOrder,
-  reconstructBracket,
-} from "@/lib/tournament";
+import { getInitialOrder } from "@/lib/tournament";
+import { buildSurvivorBracketSummaries } from "@/lib/survivor-brackets";
 
 export const dynamic = "force-dynamic";
 
@@ -53,32 +49,7 @@ export async function GET(request: Request) {
     const results = getResults();
     const allIndices =
       total > 0 ? getSurvivorIndices({ championIndex, limit: total, offset: 0 }) : [];
-    const brackets = allIndices.map((index) => {
-      const bracket = reconstructBracket(index);
-      const survivalState = getBracketSurvivalState(bracket, results);
-      const semifinalOne = survivalState.picks[60];
-      const semifinalTwo = survivalState.picks[61];
-      const championship = survivalState.picks[62];
-
-      return {
-        index,
-        picks: survivalState.picks,
-        alive: survivalState.alive,
-        likelihood: computeBracketLikelihood(survivalState.picks),
-        championPick: championship?.pick ?? "",
-        championshipGame: [
-          championship?.team1 ?? "",
-          championship?.team2 ?? "",
-        ] as [string, string],
-        finalFour: [
-          semifinalOne?.team1 ?? "",
-          semifinalOne?.team2 ?? "",
-          semifinalTwo?.team1 ?? "",
-          semifinalTwo?.team2 ?? "",
-        ].filter(Boolean),
-        eliminatedBy: survivalState.eliminated_by,
-      };
-    });
+    const brackets = buildSurvivorBracketSummaries(allIndices, results);
 
     return NextResponse.json({ brackets, total });
   }

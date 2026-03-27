@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EliminationImpact } from "@/components/GameFeed";
-import type { FutureKillerRow } from "@/lib/future-killers";
-import type { BracketPickStatus, EliminatedByPick } from "@/lib/tournament";
+import type { PendingGameRow } from "@/lib/pending-games";
+import type { SurvivorBracketSummary } from "@/lib/survivor-brackets";
 
 export interface Stats {
   remaining: number;
@@ -40,32 +40,19 @@ export interface Snapshot {
   createdAt: string;
 }
 
-export interface SurvivorBracket {
-  index: number;
-  picks: BracketPickStatus[];
-  alive: boolean;
-  likelihood: number;
-  championPick: string;
-  championshipGame: [string, string];
-  finalFour: string[];
-  eliminatedBy: EliminatedByPick | null;
-}
+export type SurvivorBracket = SurvivorBracketSummary;
+export type DisplayBracket = SurvivorBracketSummary;
 
 interface SnapshotsResponse {
   snapshots?: Snapshot[];
   eliminationImpact?: EliminationImpact[];
 }
 
-interface SurvivorsResponse {
-  brackets?: SurvivorBracket[];
-  total?: number;
-}
-
-interface FutureKillersResponse {
-  rows?: FutureKillerRow[];
-  source?: "espn" | "derived";
-  isFallback?: boolean;
-  note?: string | null;
+interface FinalNStateResponse {
+  survivors?: SurvivorBracket[];
+  displayBrackets?: DisplayBracket[];
+  pendingGames?: PendingGameRow[];
+  finalNInsights?: FinalNInsights | null;
 }
 
 export interface FinalNInsightMilestone {
@@ -90,9 +77,8 @@ export interface HomepageData {
   now: number;
   randomId: number;
   survivors: SurvivorBracket[] | null;
-  futureKillers: FutureKillerRow[];
-  futureKillersNote: string | null;
-  futureKillersIsFallback: boolean;
+  displayBrackets: DisplayBracket[] | null;
+  pendingGames: PendingGameRow[];
   finalNInsights: FinalNInsights | null;
   isAnalysisRunning: boolean;
   gamesStarted: boolean;
@@ -168,9 +154,8 @@ export function useHomepageData(): HomepageData {
   const [now, setNow] = useState(() => Date.now());
   const [randomId, setRandomId] = useState(0);
   const [survivors, setSurvivors] = useState<SurvivorBracket[] | null>(null);
-  const [futureKillers, setFutureKillers] = useState<FutureKillerRow[]>([]);
-  const [futureKillersNote, setFutureKillersNote] = useState<string | null>(null);
-  const [futureKillersIsFallback, setFutureKillersIsFallback] = useState(false);
+  const [displayBrackets, setDisplayBrackets] = useState<DisplayBracket[] | null>(null);
+  const [pendingGames, setPendingGames] = useState<PendingGameRow[]>([]);
   const [finalNInsights, setFinalNInsights] = useState<FinalNInsights | null>(null);
   const previousIsRunningRef = useRef(false);
 
@@ -225,48 +210,23 @@ export function useHomepageData(): HomepageData {
     }
   }, []);
 
-  const fetchSurvivors = useCallback(async () => {
+  const fetchFinalNState = useCallback(async () => {
     try {
-      const response = await fetch("/api/survivors?detail=full", { cache: "no-store" });
+      const response = await fetch("/api/final-n-state", { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Request failed with ${response.status}`);
       }
 
-      const data = (await response.json()) as SurvivorsResponse;
-      if (Array.isArray(data.brackets)) {
-        setSurvivors(data.brackets);
-      }
+      const data = (await response.json()) as FinalNStateResponse;
+      setSurvivors(Array.isArray(data.survivors) ? data.survivors : []);
+      setDisplayBrackets(Array.isArray(data.displayBrackets) ? data.displayBrackets : []);
+      setPendingGames(Array.isArray(data.pendingGames) ? data.pendingGames : []);
+      setFinalNInsights(data.finalNInsights ?? null);
     } catch (error) {
-      console.error("Failed to fetch survivors:", error);
-    }
-  }, []);
-
-  const fetchFutureKillers = useCallback(async () => {
-    try {
-      const response = await fetch("/api/future-killers", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Request failed with ${response.status}`);
-      }
-
-      const data = (await response.json()) as FutureKillersResponse;
-      setFutureKillers(Array.isArray(data.rows) ? data.rows : []);
-      setFutureKillersNote(data.note ?? null);
-      setFutureKillersIsFallback(Boolean(data.isFallback));
-    } catch (error) {
-      console.error("Failed to fetch future killers:", error);
-    }
-  }, []);
-
-  const fetchFinalNInsights = useCallback(async () => {
-    try {
-      const response = await fetch("/api/final-n-insights", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Request failed with ${response.status}`);
-      }
-
-      setFinalNInsights((await response.json()) as FinalNInsights);
-    } catch (error) {
-      console.error("Failed to fetch Final N insights:", error);
+      console.error("Failed to fetch Final N state:", error);
+      setSurvivors([]);
+      setDisplayBrackets([]);
+      setPendingGames([]);
       setFinalNInsights(null);
     }
   }, []);
@@ -308,18 +268,16 @@ export function useHomepageData(): HomepageData {
         void fetchResults();
         void fetchSnapshots();
         if (stats.remaining <= 20) {
-          void fetchSurvivors();
-          void fetchFutureKillers();
+          void fetchFinalNState();
         }
       });
     }
 
     previousIsRunningRef.current = isRunning;
   }, [
-    fetchFutureKillers,
+    fetchFinalNState,
     fetchResults,
     fetchSnapshots,
-    fetchSurvivors,
     stats.analysisStatus?.isRunning,
     stats.remaining,
   ]);
@@ -327,28 +285,24 @@ export function useHomepageData(): HomepageData {
   useEffect(() => {
     if (stats.remaining > 20) {
       setSurvivors(null);
-      setFutureKillers([]);
-      setFutureKillersNote(null);
-      setFutureKillersIsFallback(false);
+      setDisplayBrackets(null);
+      setPendingGames([]);
       setFinalNInsights(null);
       return;
     }
 
     queueMicrotask(() => {
-      void fetchSurvivors();
-      void fetchFutureKillers();
-      void fetchFinalNInsights();
+      void fetchFinalNState();
     });
 
     const intervalId = window.setInterval(() => {
-      void fetchFutureKillers();
-      void fetchFinalNInsights();
+      void fetchFinalNState();
     }, 60_000);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [fetchFinalNInsights, fetchFutureKillers, fetchSurvivors, stats.remaining]);
+  }, [fetchFinalNState, stats.remaining]);
 
   const isAnalysisRunning = stats.analysisStatus?.isRunning ?? false;
   const gamesStarted = stats.gamesCompleted > 0;
@@ -397,9 +351,8 @@ export function useHomepageData(): HomepageData {
     now,
     randomId,
     survivors,
-    futureKillers,
-    futureKillersNote,
-    futureKillersIsFallback,
+    displayBrackets,
+    pendingGames,
     finalNInsights,
     isAnalysisRunning,
     gamesStarted,

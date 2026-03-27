@@ -1,22 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BracketCard from "@/components/BracketCard";
 import BracketPathVisualizer from "@/components/BracketPathVisualizer";
 import SiteNav from "@/components/SiteNav";
-import type { HomepageData, SurvivorBracket } from "@/hooks/useHomepageData";
-import { useTrackedBrackets } from "@/hooks/useTrackedBrackets";
+import type { HomepageData } from "@/hooks/useHomepageData";
+import { assignPathBracketColors, buildPathBrackets } from "@/lib/path-brackets";
 import { useReturningVisitor } from "@/hooks/useReturningVisitor";
 import { getTeamAccentColor } from "@/lib/team-colors";
-import type { BracketPickStatus, EliminatedByPick } from "@/lib/tournament";
-
-interface HistoricBracketResponse {
-  id: number;
-  picks: BracketPickStatus[];
-  alive: boolean;
-  eliminated_by: EliminatedByPick | null;
-}
 
 function useCountAnimation(
   target: number,
@@ -63,33 +55,6 @@ function useCountAnimation(
   return shouldAnimate && from != null ? display : target;
 }
 
-function buildHistoricBracket(
-  data: HistoricBracketResponse
-): SurvivorBracket {
-  const semifinalOne = data.picks[60];
-  const semifinalTwo = data.picks[61];
-  const championship = data.picks[62];
-
-  return {
-    index: data.id,
-    picks: data.picks,
-    alive: data.alive,
-    likelihood: 0,
-    championPick: championship?.pick ?? "",
-    championshipGame: [
-      championship?.team1 ?? "",
-      championship?.team2 ?? "",
-    ] as [string, string],
-    finalFour: [
-      semifinalOne?.team1 ?? "",
-      semifinalOne?.team2 ?? "",
-      semifinalTwo?.team1 ?? "",
-      semifinalTwo?.team2 ?? "",
-    ].filter(Boolean),
-    eliminatedBy: data.eliminated_by,
-  };
-}
-
 function formatBracketList(indices: number[]): string {
   const formatter = new Intl.ListFormat(undefined, {
     style: "long",
@@ -129,18 +94,17 @@ function findMilestoneOdds(
 export default function FinalNHomepage({
   stats,
   survivors,
-  futureKillers,
+  displayBrackets,
+  pendingGames,
   finalNInsights,
   results,
   impacts,
-  now,
   randomId,
   isAnalysisRunning,
   eliminated,
 }: HomepageData) {
   const [bracketInput, setBracketInput] = useState("");
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
-  const [deadBrackets, setDeadBrackets] = useState<SurvivorBracket[]>([]);
   const bracketTarget =
     bracketInput.trim() !== "" ? bracketInput.trim() : String(randomId);
   const {
@@ -154,9 +118,13 @@ export default function FinalNHomepage({
     previousState?.remaining ?? null,
     isReturning && remainingDelta > 0
   );
-  const trackedBrackets = useTrackedBrackets(survivors, results);
-  const trackedBracketColors = new Map(
-    trackedBrackets.map((bracket) => [bracket.index, bracket.color])
+  const bracketColors = useMemo(
+    () => assignPathBracketColors(displayBrackets ?? []),
+    [displayBrackets]
+  );
+  const pathBrackets = useMemo(
+    () => buildPathBrackets(displayBrackets ?? [], bracketColors),
+    [displayBrackets, bracketColors]
   );
   const finalFourOdds = findMilestoneOdds(finalNInsights, "final-four");
   const championshipOdds = findMilestoneOdds(finalNInsights, "championship");
@@ -177,19 +145,14 @@ export default function FinalNHomepage({
   const lastKillerLoser = lastKillerGame?.winner
     ? (lastKillerGame.team1 === lastKillerGame.winner ? lastKillerGame.team2 : lastKillerGame.team1)
     : null;
+  const visibleCards = [...(displayBrackets ?? [])].sort((a, b) => {
+    const aliveDiff = Number(b.alive) - Number(a.alive);
+    if (aliveDiff !== 0) {
+      return aliveDiff;
+    }
 
-  // Dead brackets: tracked brackets that have been eliminated (known from results)
-  const deadTrackedIndices = trackedBrackets
-    .filter((b) => b.eliminatedAtGame !== null)
-    .map((b) => b.index);
-  const deadTrackedKey = deadTrackedIndices.join(",");
-
-  const visibleCards = [
-    ...(survivors ?? []).slice().sort((a, b) => b.likelihood - a.likelihood),
-    ...deadBrackets.filter(
-      (bracket) => !(survivors ?? []).some((survivor) => survivor.index === bracket.index)
-    ),
-  ];
+    return b.likelihood - a.likelihood;
+  });
 
   useEffect(() => {
     if (!shouldShowBanner) {
@@ -204,51 +167,6 @@ export default function FinalNHomepage({
       window.clearTimeout(timer);
     };
   }, [eliminatedKey, shouldShowBanner]);
-
-  // Fetch full bracket data for any tracked bracket that's been eliminated
-  useEffect(() => {
-    const indices = deadTrackedKey
-      ? deadTrackedKey.split(",").map(Number).filter(Number.isFinite)
-      : [];
-    let cancelled = false;
-
-    if (indices.length === 0) {
-      queueMicrotask(() => {
-        if (!cancelled) setDeadBrackets([]);
-      });
-      return;
-    }
-
-    async function loadDeadCards() {
-      try {
-        const loaded = await Promise.all(
-          indices.map(async (index) => {
-            const response = await fetch(`/api/bracket/${index}`, { cache: "no-store" });
-            if (!response.ok) {
-              throw new Error(`Failed to load bracket ${index}`);
-            }
-
-            return buildHistoricBracket((await response.json()) as HistoricBracketResponse);
-          })
-        );
-
-        if (!cancelled) {
-          setDeadBrackets(loaded);
-        }
-      } catch (error) {
-        console.error("Failed to load dead bracket cards:", error);
-        if (!cancelled) {
-          setDeadBrackets([]);
-        }
-      }
-    }
-
-    void loadDeadCards();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [deadTrackedKey]);
 
   return (
     <div className="home-shell min-h-screen text-white">
@@ -398,21 +316,21 @@ export default function FinalNHomepage({
                 eliminatedBy={bracket.eliminatedBy}
                 likelihood={bracket.likelihood}
                 pendingPicks={bracket.picks.filter((pick) => pick.result === "pending")}
-                scheduledGames={futureKillers}
+                pendingGames={pendingGames}
                 accentColor={
-                  trackedBracketColors.get(bracket.index) ??
+                  bracketColors.get(bracket.index) ??
                   getTeamAccentColor(bracket.championPick)
                 }
                 animateElimination={eliminatedSince.includes(bracket.index)}
                 animationDelayMs={index * 500}
               />
             ))}
-            {!survivors && (
+            {!displayBrackets && (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-white/45">
-                Loading surviving brackets...
+                Loading final brackets...
               </div>
             )}
-            {survivors?.length === 0 && visibleCards.length === 0 && (
+            {displayBrackets?.length === 0 && visibleCards.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-white/45">
                 {isOver ? "All brackets have been eliminated." : "No surviving brackets found."}
               </div>
@@ -424,10 +342,9 @@ export default function FinalNHomepage({
       <section className="px-3 py-4 sm:px-6 sm:py-6">
         <div className="max-w-5xl mx-auto">
           <BracketPathVisualizer
-            trackedBrackets={trackedBrackets}
+            brackets={pathBrackets}
             results={results}
-            futureKillers={futureKillers}
-            now={now}
+            pendingGames={pendingGames}
           />
         </div>
       </section>

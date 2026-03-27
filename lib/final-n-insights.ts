@@ -1,10 +1,4 @@
 import {
-  extractScheduledTournamentGames,
-  fetchScoreboard,
-  getScoreboardCalendarDateKeys,
-  mapEspnTeamName,
-} from "./espn";
-import {
   buildCurrentGameDefinitions,
   buildMatchupProbabilityTable,
   getBracketSurvivalState,
@@ -12,6 +6,7 @@ import {
   reconstructBracket,
 } from "./tournament";
 import { getResults, getSurvivorCount, getSurvivorIndices } from "./db";
+import { fetchPendingGames, type PendingGameRow } from "./pending-games";
 
 interface GameResultLike {
   game_index: number;
@@ -47,31 +42,12 @@ export interface FinalNInsights {
   milestones: FinalNInsightMilestone[];
 }
 
-const MAX_SCOREBOARD_DAYS = 6;
-const PLACEHOLDER_PREFIX = "Winner of Game";
-
 function formatDateLabel(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   }).format(new Date(value));
-}
-
-function matchupKey(team1: string, team2: string): string {
-  return [team1, team2].sort((a, b) => a.localeCompare(b)).join("::");
-}
-
-function isKnownUpcomingGame(
-  game: { game_index: number; team1: string; team2: string },
-  resultByGame: Map<number, GameResultLike>
-): boolean {
-  const result = resultByGame.get(game.game_index);
-  return (
-    result?.winner == null &&
-    !game.team1.startsWith(PLACEHOLDER_PREFIX) &&
-    !game.team2.startsWith(PLACEHOLDER_PREFIX)
-  );
 }
 
 function buildPatternKey(
@@ -177,67 +153,9 @@ function computeMilestoneProbability(
   return totalProbability;
 }
 
-async function fetchMappedUpcomingSchedule(
-  results: GameResultLike[]
-): Promise<Array<{ gameIndex: number; scheduledAt: string }>> {
-  const formatLocalDateKey = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, "0");
-    const day = `${date.getDate()}`.padStart(2, "0");
-    return `${year}${month}${day}`;
-  };
-
-  const resultByGame = new Map(results.map((result) => [result.game_index, result]));
-  const localUpcomingGames = buildCurrentGameDefinitions(results).filter((game) =>
-    isKnownUpcomingGame(game, resultByGame)
-  );
-  const candidateNames = localUpcomingGames.flatMap((game) => [game.team1, game.team2]);
-  const localGameByMatchup = new Map(
-    localUpcomingGames.map((game) => [matchupKey(game.team1, game.team2), game])
-  );
-
-  const todayKey = formatLocalDateKey(new Date());
-  const initialScoreboard = await fetchScoreboard(todayKey);
-  const calendarKeys = getScoreboardCalendarDateKeys(initialScoreboard)
-    .filter((dateKey) => dateKey >= todayKey)
-    .filter((dateKey, index, values) => values.indexOf(dateKey) === index);
-  const dateKeys = [todayKey, ...calendarKeys.filter((dateKey) => dateKey !== todayKey)].slice(
-    0,
-    MAX_SCOREBOARD_DAYS
-  );
-
-  const scheduledGames = extractScheduledTournamentGames(initialScoreboard);
-  for (const dateKey of dateKeys.slice(1)) {
-    const scoreboard = await fetchScoreboard(dateKey);
-    scheduledGames.push(...extractScheduledTournamentGames(scoreboard));
-  }
-
-  const seen = new Set<number>();
-  const mapped: Array<{ gameIndex: number; scheduledAt: string }> = [];
-
-  for (const scheduledGame of scheduledGames) {
-    const team1 = mapEspnTeamName(scheduledGame.team1, { candidateNames });
-    const team2 = mapEspnTeamName(scheduledGame.team2, { candidateNames });
-    if (!team1 || !team2 || team1 === team2) {
-      continue;
-    }
-
-    const localGame = localGameByMatchup.get(matchupKey(team1, team2));
-    if (!localGame || seen.has(localGame.game_index)) {
-      continue;
-    }
-
-    seen.add(localGame.game_index);
-    mapped.push({
-      gameIndex: localGame.game_index,
-      scheduledAt: scheduledGame.eventDate,
-    });
-  }
-
-  return mapped.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
-}
-
-export async function buildFinalNInsights(): Promise<FinalNInsights | null> {
+export function buildFinalNInsightsFromPendingGames(
+  pendingGames: PendingGameRow[]
+): FinalNInsights | null {
   const total = getSurvivorCount();
   if (total === 0 || total > 20) {
     return null;
@@ -280,37 +198,36 @@ export async function buildFinalNInsights(): Promise<FinalNInsights | null> {
   const milestones: FinalNInsightMilestone[] = [];
   let bestCaseAfter: FinalNInsights["bestCaseAfter"] = null;
 
-  try {
-    const scheduledGames = await fetchMappedUpcomingSchedule(results);
-    const nextScheduledAt = scheduledGames[0]?.scheduledAt ?? null;
-    if (nextScheduledAt) {
-      const nextLabel = formatDateLabel(nextScheduledAt);
-      const nextDateGameIndices = scheduledGames
-        .filter((game) => formatDateLabel(game.scheduledAt) === nextLabel)
-        .map((game) => game.gameIndex)
-        .sort((a, b) => a - b);
+  const scheduledPendingGames = pendingGames.filter((game) => game.scheduledAt);
+  const nextScheduledAt = scheduledPendingGames[0]?.scheduledAt ?? null;
+  if (nextScheduledAt) {
+    const nextLabel = formatDateLabel(nextScheduledAt);
+    const nextDateGameIndices = Array.from(
+      new Set(
+        scheduledPendingGames
+          .filter((game) => game.scheduledAt && formatDateLabel(game.scheduledAt) === nextLabel)
+          .map((game) => game.gameIndex)
+      )
+    ).sort((a, b) => a - b);
 
-      if (nextDateGameIndices.length > 0) {
-        bestCaseAfter = {
-          label: nextLabel,
-          remaining: computeBestCaseSurvivorCount(brackets, nextDateGameIndices),
-        };
+    if (nextDateGameIndices.length > 0) {
+      bestCaseAfter = {
+        label: nextLabel,
+        remaining: computeBestCaseSurvivorCount(brackets, nextDateGameIndices),
+      };
 
-        milestones.push({
-          id: "next-date",
-          label: `Chance at least one perfect bracket remains after ${nextLabel}`,
-          probability: computeMilestoneProbability(
-            brackets,
-            nextDateGameIndices,
-            results,
-            probabilityTable,
-            teamNameToIndex
-          ),
-        });
-      }
+      milestones.push({
+        id: "next-date",
+        label: `Chance at least one perfect bracket remains after ${nextLabel}`,
+        probability: computeMilestoneProbability(
+          brackets,
+          nextDateGameIndices,
+          results,
+          probabilityTable,
+          teamNameToIndex
+        ),
+      });
     }
-  } catch (error) {
-    console.error("Failed to build next-date Final N insights:", error);
   }
 
   milestones.push({
@@ -341,6 +258,21 @@ export async function buildFinalNInsights(): Promise<FinalNInsights | null> {
     bestCaseAfter,
     milestones,
   };
+}
+
+export async function buildFinalNInsights(): Promise<FinalNInsights | null> {
+  const total = getSurvivorCount();
+  if (total === 0 || total > 20) {
+    return null;
+  }
+
+  try {
+    const pendingGames = await fetchPendingGames(getResults());
+    return buildFinalNInsightsFromPendingGames(pendingGames);
+  } catch (error) {
+    console.error("Failed to build Final N insights:", error);
+    return buildFinalNInsightsFromPendingGames([]);
+  }
 }
 
 export const __testExports = {
