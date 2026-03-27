@@ -299,7 +299,8 @@ function Dot({ state, color }: { state: CellState; color: string }) {
 
 const COMPLETED_COL_W = 112;
 const UPCOMING_COL_W = 160;
-const STICKY_COL_CLASS = "sticky left-0 border-r border-white/6 bg-[#19191d]";
+const STICKY_COL_CLASS =
+  "sticky left-0 relative overflow-hidden border-r border-white/6 bg-[#19191d]";
 
 function ColumnHeader({
   col,
@@ -411,7 +412,7 @@ function BracketLabel({
   return (
     <button
       type="button"
-      className={`${STICKY_COL_CLASS} group z-10 flex-shrink-0 flex flex-col justify-center pr-3 text-left cursor-pointer`}
+      className={`${STICKY_COL_CLASS} group z-30 flex-shrink-0 flex flex-col justify-center pr-3 text-left cursor-pointer`}
       style={{ width: LABEL_COL_W, height: ROW_H }}
       onClick={onClick}
       title="Click to trace this bracket's path"
@@ -508,7 +509,7 @@ function DesktopGrid({
         {/* Header row */}
         <div className="flex pt-1">
           <div
-            className={`${STICKY_COL_CLASS} z-20 -mt-1 flex items-center justify-end pr-3 pt-2 pb-2`}
+            className={`${STICKY_COL_CLASS} z-40 -mt-1 flex items-center justify-end pr-3 pt-2 pb-2`}
             style={{ width: LABEL_COL_W, minWidth: LABEL_COL_W }}
           >
             <ClearSelectionsButton
