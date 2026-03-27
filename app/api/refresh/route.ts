@@ -27,6 +27,7 @@ import {
 } from "@/lib/analysis-status";
 import {
   addAuditLog,
+  getFinalDisplayCohort,
   hasCurrentResultsSnapshot,
   getPendingResultEvents,
   markResultEventProcessed,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/db";
 import { fetchAndQueueEspnResults } from "@/lib/espn";
 import { syncFinalDisplayCohortFromCurrentSurvivors } from "@/lib/final-display-cohort";
+import { runExactFinalCohortAnalysis } from "@/lib/final-cohort-analysis";
 import { resetTournamentCaches } from "@/lib/tournament";
 
 async function processPendingResultEvents() {
@@ -68,6 +70,43 @@ async function processPendingResultEvents() {
   return { processed, lastStats };
 }
 
+async function processPendingResultEventsForFinalCohort() {
+  const pendingEvents = getPendingResultEvents();
+  const newGameIndices = new Set<number>();
+
+  for (const event of pendingEvents) {
+    setResult(event.gameIndex, event.round, event.team1, event.team2, event.winner, {
+      source: event.source,
+      manualOverride: false,
+    });
+    resetTournamentCaches();
+    markResultEventProcessed(event.id);
+    newGameIndices.add(event.gameIndex);
+  }
+
+  const lastStats = await runExactFinalCohortAnalysis({
+    newGameIndices: [...newGameIndices],
+  });
+
+  for (const event of pendingEvents) {
+    addAuditLog("result_event_processed", {
+      resultEventId: event.id,
+      gameIndex: event.gameIndex,
+      round: event.round,
+      team1: event.team1,
+      team2: event.team2,
+      winner: event.winner,
+      source: event.source,
+      espnEventId: event.espnEventId,
+      remaining: lastStats.remaining,
+      gamesCompleted: lastStats.gamesCompleted,
+      analyzedAt: lastStats.analyzedAt,
+    });
+  }
+
+  return { processed: pendingEvents.length, lastStats };
+}
+
 async function runRefresh(espnSummary: {
   queued: number;
   skipped: number;
@@ -88,13 +127,18 @@ async function runRefresh(espnSummary: {
     // Freeze the canonical Final Five cohort before applying any new results.
     // This preserves the pre-elimination roster across 5 -> N transitions.
     syncFinalDisplayCohortFromCurrentSurvivors();
+    const useExactFinalCohort = Boolean(getFinalDisplayCohort());
 
-    const processingSummary = await processPendingResultEvents();
+    const processingSummary = useExactFinalCohort
+      ? await processPendingResultEventsForFinalCohort()
+      : await processPendingResultEvents();
     processedResultEvents = processingSummary.processed;
     lastStats = processingSummary.lastStats;
 
     if (!lastStats) {
-      lastStats = await runAnalysis();
+      lastStats = useExactFinalCohort
+        ? await runExactFinalCohortAnalysis()
+        : await runAnalysis();
     }
 
     const analysisStatus = finishAnalysisRun();

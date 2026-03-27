@@ -90,7 +90,7 @@ export interface RunAnalysisOptions {
  * Reconstruct all surviving brackets and compute round-by-round survivor
  * counts and per-game pick distributions.
  */
-function computeDerivedStats(
+export function computeDerivedStats(
   survivorIndices: Array<{ index: number; championIndex: number }>
 ): { roundSurvivorCounts: RoundSurvivorCounts; gamePickCounts: GamePickCounts } {
   const initialOrder = getInitialOrder();
