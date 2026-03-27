@@ -216,6 +216,12 @@ test.describe("dashboard", () => {
     await expect(page).not.toHaveTitle(/Error/i);
     // Something renders
     await expect(page.locator("body")).not.toBeEmpty();
+    await expect(page.locator("nav > div").first()).toBeVisible();
+
+    const navWidth = await page.locator("nav > div").first().evaluate(
+      (element) => element.getBoundingClientRect().width
+    );
+    expect(navWidth).toBeGreaterThan(1100);
 
      const myTeamButton = page.getByRole("button", { name: "My Team" });
      if ((await myTeamButton.count()) > 0) {
@@ -267,5 +273,10 @@ test.describe("bracket viewer", () => {
     await page.goto("/bracket/0");
     await expect(page).not.toHaveTitle(/Error/i);
     await expect(page.locator("body")).not.toBeEmpty();
+
+    const shellWidth = await page.locator("main > div").first().evaluate(
+      (element) => element.getBoundingClientRect().width
+    );
+    expect(shellWidth).toBeGreaterThan(1100);
   });
 });

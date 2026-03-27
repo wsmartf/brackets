@@ -115,7 +115,7 @@ export default function BracketViewer({
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f4ee_0%,#efe8db_100%)] text-stone-950">
       <SiteNav activePage="bracket" />
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
         <header className="rounded-[2rem] border border-black/8 bg-white/80 px-5 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:px-7 sm:py-6">
           <div className="mt-0 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div>

@@ -172,8 +172,8 @@ export default function FinalNHomepage({
     <div className="home-shell min-h-screen text-white">
       <SiteNav activePage="home" />
 
-      <section className="px-6 pt-4 sm:pt-6 pb-6">
-        <div className="max-w-5xl mx-auto lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10 lg:items-center">
+      <section className="px-4 pb-6 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center lg:gap-12">
           <div className="lg:col-start-1 lg:row-start-2">
             <p className="mb-4 text-xs tracking-[0.2em] text-white/40">
               I created 1 billion March Madness brackets.
@@ -267,10 +267,10 @@ export default function FinalNHomepage({
       </section>
 
       {shouldShowBanner && (
-        <section className="px-6 pb-2">
+        <section className="px-4 pb-2 sm:px-6 lg:px-8">
           <button
             type="button"
-            className="mx-auto block w-full max-w-5xl rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-left"
+            className="mx-auto block w-full max-w-7xl rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-left"
             onClick={() => setDismissedKey(eliminatedKey)}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -292,8 +292,8 @@ export default function FinalNHomepage({
         </section>
       )}
 
-      <section className="px-6 py-4">
-        <div className="max-w-5xl mx-auto">
+        <section className="px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <p className="text-xs uppercase tracking-[0.15em] text-white/35">
@@ -304,7 +304,7 @@ export default function FinalNHomepage({
               </h2>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             {visibleCards.map((bracket, index) => (
               <BracketCard
                 key={bracket.index}
@@ -339,8 +339,8 @@ export default function FinalNHomepage({
         </div>
       </section>
 
-      <section className="px-3 py-4 sm:px-6 sm:py-6">
-        <div className="max-w-5xl mx-auto">
+      <section className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
           <BracketPathVisualizer
             brackets={pathBrackets}
             results={results}
@@ -349,8 +349,8 @@ export default function FinalNHomepage({
         </div>
       </section>
 
-      <section className="px-6 py-8">
-        <div className="max-w-5xl mx-auto">
+      <section className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <p className="text-xs uppercase tracking-[0.15em] text-white/40">
               Browse the universe
@@ -386,8 +386,8 @@ export default function FinalNHomepage({
         </div>
       </section>
 
-      <footer className="border-t border-white/8 px-6 py-4">
-        <div className="max-w-5xl mx-auto text-xs text-white/30 space-y-0.5">
+      <footer className="border-t border-white/8 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl space-y-0.5 text-xs text-white/30">
           {isAnalysisRunning && stats.analysisStatus?.lastStartedAt && (
             <p className="text-amber-400/80">
               Analysis running since{" "}

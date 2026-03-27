@@ -167,7 +167,7 @@ export default function UpcomingGames({
   const hasLiveGame = games.some((game) => game.status === "likely-live");
 
   return (
-    <div className="max-w-5xl mx-auto space-y-3">
+    <div className="mx-auto w-full max-w-7xl space-y-3">
       <p className="text-xs uppercase tracking-[0.15em] text-white/40">
         {hasLiveGame ? "Games Today" : "Upcoming Games"}
       </p>

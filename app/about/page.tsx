@@ -12,7 +12,7 @@ export default function AboutPage() {
     <>
       <SiteNav activePage="about" />
       <main className="about-shell min-h-screen text-stone-950">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
 
           {/* Section 1 — Header card */}
           <header className="rounded-[2rem] border border-black/8 bg-white/82 px-5 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:px-7 sm:py-6">

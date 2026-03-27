@@ -8,8 +8,8 @@ const PROJECT_GITHUB_URL = "https://github.com/wsmartf/brackets";
 
 export default function SiteNav({ activePage }: SiteNavProps) {
   return (
-    <nav className="bg-[#0d0d12] border-b border-white/8 px-6 py-4">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
+    <nav className="border-b border-white/8 bg-[#0d0d12] px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         <Link
           href="/"
           aria-label="Go to homepage"

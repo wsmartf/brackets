@@ -32,8 +32,8 @@ export default function StandardHomepage({
     <div className="home-shell min-h-screen text-white">
       <SiteNav activePage="home" />
 
-      <section className="home-hero px-6 pt-14 sm:pt-20 pb-10">
-        <div className="max-w-5xl mx-auto">
+      <section className="home-hero px-4 pb-10 pt-14 sm:px-6 sm:pt-20 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-6">
             I generated 1 billion March Madness brackets.
           </p>
@@ -97,8 +97,8 @@ export default function StandardHomepage({
       </section>
 
       {gamesStarted && (
-        <section className="px-6 py-8 border-t border-white/8">
-          <div className="max-w-5xl mx-auto">
+        <section className="border-t border-white/8 px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">
             <div className="flex flex-wrap items-center divide-x divide-white/10">
               <div className="flex-1 min-w-[140px] px-6 first:pl-0 py-2 text-center">
                 <p className="text-3xl sm:text-4xl font-bold tabular-nums text-white">
@@ -141,8 +141,8 @@ export default function StandardHomepage({
       )}
 
       {hasData && (
-        <section className="px-6 py-12">
-          <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-6 items-start">
+        <section className="px-4 py-12 sm:px-6 lg:px-8">
+          <div className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 md:flex-row">
             <div className="flex-1 min-w-0">
               <AnalysisCardSwitcher
                 probs={stats.championshipProbs ?? {}}
@@ -164,8 +164,8 @@ export default function StandardHomepage({
         </section>
       )}
 
-      <section className="px-6 py-8">
-        <div className="max-w-5xl mx-auto">
+        <section className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
             <p className="text-xs uppercase tracking-[0.15em] text-white/40 mb-2">
               Browse the universe
@@ -209,8 +209,8 @@ export default function StandardHomepage({
         </div>
       </section>
 
-      <footer className="border-t border-white/8 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-white/30">
+      <footer className="border-t border-white/8 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 text-xs text-white/30">
           <div className="space-y-0.5">
             {isAnalysisRunning && stats.analysisStatus?.lastStartedAt && (
               <p className="text-amber-400/80">

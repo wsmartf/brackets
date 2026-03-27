@@ -184,7 +184,7 @@ export default function BracketCard({
   return (
     <article
       className={`flex h-full flex-col rounded-2xl border border-white/10 border-l-[3px] bg-white/5 p-5 transition-[opacity,transform,border-color] duration-700 ${
-        isVisuallyAlive ? "opacity-100 translate-y-0" : "opacity-50 translate-y-1"
+        isVisuallyAlive ? "opacity-100 translate-y-0" : "opacity-50 translate-y-0"
       }`}
       style={{ borderLeftColor }}
     >
